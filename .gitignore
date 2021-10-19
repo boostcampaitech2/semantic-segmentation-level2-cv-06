@@ -1,0 +1,15 @@
+# Byte-compiled
+__pycache__/
+
+# dataset
+input/
+
+# baseline
+baseline_code/
+
+# output
+model/
+output/
+
+# wandb
+wandb/
