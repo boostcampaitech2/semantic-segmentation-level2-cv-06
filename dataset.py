@@ -28,8 +28,7 @@ class CustomDataLoader(Dataset):
         self.mode = mode
         self.transform = transform
         self.coco = COCO(data_dir)
-        print(os.path.abspath(data_dir))
-        print(os.path.abspath(dataset_path))
+        
     def __getitem__(self, index):
         # dataset이 index되어 list처럼 동작
         image_id = self.coco.getImgIds(imgIds=index)
