@@ -1,12 +1,13 @@
 name,r,g,b
 Backgroud,0,0,0
-General trash,192,0,128
-Paper,0,128,192
-Paper pack,0,128,64
-Metal,128,0,0
-Glass,64,0,128
-Plastic,64,0,192
-Styrofoam,192,128,64
-Plastic bag,192,192,128
-Battery,64,64,128
-Clothing,128,0,192
+General trash,250,0,50
+Paper,0,255,0
+Paper pack,0,180,80
+Metal,185,185,185
+Glass,100,100,100
+Plastic,200,50,150
+Styrofoam,50,150,200
+Plastic bag,50,200,150
+Battery,200,200,200
+Clothing,255,255,255
+
