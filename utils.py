@@ -70,7 +70,10 @@ def grid_image(images, masks, preds, n=4, shuffle=False):
         ax[idx*3+2] = figure.add_subplot(gs[idx, 2])
         ax[idx*3+2].imshow(pred)
         ax[idx*3+2].grid(False)
+        # 나중에 확률 값으로 얼마나 틀렸는지 시각화 해주는 열을 추가하면 더 좋을듯?
         
+    figure.suptitle('image / GT / pred', fontsize=16)
+
     return figure
 
 

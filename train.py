@@ -105,10 +105,10 @@ def train(model_dir, args):
         # if weighted cross-entropy
         # weight=torch.tensor([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]).to(device)
         )
+
+    # 여러 옵티마이저 가능하게 수정 필요
     optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
 
-    # logging   
-    logger = SummaryWriter(log_dir=save_dir)
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
 
@@ -116,6 +116,7 @@ def train(model_dir, args):
     category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                       'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
     best_val_mIoU = 0
+    step = 0
     for epoch in range(args.epochs):
         print(f'Start training..')
 
@@ -123,7 +124,7 @@ def train(model_dir, args):
         model.train()
         
         hist = np.zeros((n_classes, n_classes))
-        for step, (images, masks, _) in enumerate(train_loader):
+        for images, masks, _ in train_loader:
             images = torch.stack(images)
             masks = torch.stack(masks).long()
             
@@ -143,6 +144,7 @@ def train(model_dir, args):
             loss.backward()
             optimizer.step()
 
+            # 데이터 검증
             outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
             masks = masks.detach().cpu().numpy()
 
@@ -156,8 +158,6 @@ def train(model_dir, args):
                     f"Epoch[{epoch+1}/{args.epochs}] Step [{step+1}/{len(train_loader)}] || "
                     f"training loss {round(loss.item(),4)} || mIoU {round(mIoU,4)} || lr {current_lr}"
                 )
-                logger.add_scalar("Train/loss", round(loss.item(),4), epoch * len(train_loader) + step)
-                logger.add_scalar("Train/mIoU", round(mIoU.item(),4), epoch * len(train_loader) + step)
 
                 # wandb log
                 if args.wandb == True:
@@ -166,7 +166,10 @@ def train(model_dir, args):
                         "Train/Train mIoU": round(mIoU.item(), 4),
                         "Train/Train acc": round(acc.item(), 4),
                         "learning_rate": current_lr
-                    })
+                        },
+                        step=step)
+
+            step += 1
 
         # val loop
         with torch.no_grad():
@@ -178,7 +181,7 @@ def train(model_dir, args):
             figure = None
 
             hist = np.zeros((n_classes, n_classes))
-            for step, (images, masks, _) in enumerate(val_loader):
+            for images, masks, _ in val_loader:
                 images = torch.stack(images)
                 masks = torch.stack(masks).long()
 
@@ -222,9 +225,6 @@ def train(model_dir, args):
                 print(f"Save best model in {save_dir}")
             
             torch.save(model, f"{save_dir}/last.pt")
-            logger.add_scalar("Val/loss", round(avg_loss.item(), 4), epoch)
-            logger.add_scalar("Val/accuracy", round(acc, 4), epoch)
-            logger.add_figure("results", figure, epoch)
 
             # wandb log
             if args.wandb == True:
@@ -237,7 +237,8 @@ def train(model_dir, args):
                     "Metric/Paper_pack_IoU": IoU_by_class[3]['Paper pack'], "Metric/Metal_IoU": IoU_by_class[4]['Metal'], "Metric/Glass_IoU": IoU_by_class[5]['Glass'],
                     "Metric/Plastic_IoU": IoU_by_class[6]['Plastic'], "Metric/Styrofoam_IoU": IoU_by_class[7]['Styrofoam'], "Metric/Plastic_bag_IoU": IoU_by_class[8]['Plastic bag'],
                     "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing']
-                })
+                    },
+                    step=step)
             print()
 
 
