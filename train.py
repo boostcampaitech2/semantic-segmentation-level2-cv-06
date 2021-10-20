@@ -98,7 +98,9 @@ def train(model_dir, args):
     model = model_module(
         num_classes=n_classes, pretrained=True
     )
-    wandb.watch(model)
+
+    if args.wandb == True:
+        wandb.watch(model)
 
     # loss & optimizer
     criterion = create_criterion(
