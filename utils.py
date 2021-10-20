@@ -72,7 +72,10 @@ def grid_image(images, masks, preds, n=4, shuffle=False):
         ax[idx*3+2] = figure.add_subplot(gs[idx, 2])
         ax[idx*3+2].imshow(label_to_color_image(pred))
         ax[idx*3+2].grid(False)
+        # 나중에 확률 값으로 얼마나 틀렸는지 시각화 해주는 열을 추가하면 더 좋을듯?
         
+    figure.suptitle('image / GT / pred', fontsize=16)
+
     return figure
 
 def create_trash_label_colormap():
@@ -107,8 +110,21 @@ def label_to_color_image(label):
 
     if np.max(label) >= len(colormap):
         raise ValueError('label value too large.')
-
+    
     return colormap[label]
+
+def remove_dot_underbar(root):
+    for path in os.listdir(root):
+        tmp = os.path.join(root,path)
+        if os.path.isdir(tmp):
+            remove_dot_underbar(tmp)
+        if path[0] == '.' and path[1] =='_':
+            os.remove(tmp)
+            print(tmp, 'is removed')
+
+
+# root = './'
+# remove_dot_underbar(root)
 
 # def label_accuracy_score(label_trues, label_preds, n_class):
 #     """Returns accuracy score evaluation result.
@@ -132,3 +148,5 @@ def label_to_color_image(label):
 #     freq = hist.sum(axis=1) / hist.sum()
 #     fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
 #     return acc, acc_cls, mean_iu, fwavacc, iu
+
+

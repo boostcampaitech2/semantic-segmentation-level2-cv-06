@@ -28,7 +28,11 @@ class CustomDataLoader(Dataset):
         self.mode = mode
         self.transform = transform
         self.coco = COCO(data_dir)
-        
+
+        # Load the categories in a variable
+        self.cat_ids = self.coco.getCatIds()
+        self.cats = self.coco.loadCats(self.cat_ids)
+    
     def __getitem__(self, index):
         # dataset이 index되어 list처럼 동작
         image_id = self.coco.getImgIds(imgIds=index)
@@ -43,10 +47,6 @@ class CustomDataLoader(Dataset):
             ann_ids = self.coco.getAnnIds(imgIds=image_infos['id'])
             anns = self.coco.loadAnns(ann_ids)
 
-            # Load the categories in a variable
-            cat_ids = self.coco.getCatIds()
-            cats = self.coco.loadCats(cat_ids)
-
             # masks : size가 (height x width)인 2D
             # 각각의 pixel 값에는 "category id" 할당
             # Background = 0
@@ -55,9 +55,10 @@ class CustomDataLoader(Dataset):
             # General trash = 1, ... , Clothing = 10
             anns = sorted(anns, key=lambda idx: len(idx['segmentation'][0]), reverse=False)
             for i in range(len(anns)):
-                className = get_classname(anns[i]['category_id'], cats)
-                pixel_value = category_names.index(className)
-                masks[self.coco.annToMask(anns[i])==1] = pixel_value
+                # className = get_classname(anns[i]['category_id'], self.cats)
+                # pixel_value = category_names.index(className)
+                # masks[self.coco.annToMask(anns[i])==1] = pixel_value
+                masks[self.coco.annToMask(anns[i])==1] = anns[i]['category_id']
             masks = masks.astype(np.int8)
 
             # transform -> albumentations
@@ -66,13 +67,14 @@ class CustomDataLoader(Dataset):
                 images = transformed["image"]
                 masks = transformed["mask"]
             return images, masks, image_infos
-
-        if self.mode == 'test':
+        elif self.mode == 'test':
             # transform -> albumentations
             if self.transform is not None:
                 transformed = self.transform(image=images)
                 images = transformed["image"]
             return images, image_infos
+        else:
+            raise RuntimeError("CustomDataLoader mode error")
     
     def __len__(self):
         # 전체 dataset의 size를 return
