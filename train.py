@@ -98,7 +98,7 @@ def train(model_dir, args):
     model = model_module(
         num_classes=n_classes, pretrained=True
     )
-    wandb.watch(model)
+    # wandb.watch(model)
 
     # loss & optimizer
     criterion = create_criterion(
@@ -108,7 +108,7 @@ def train(model_dir, args):
         )
     optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
 
-    # logging
+    # logging   
     logger = SummaryWriter(log_dir=save_dir)
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
@@ -116,7 +116,7 @@ def train(model_dir, args):
     # start train
     category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                       'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
-    best_val_loss = np.inf
+    best_val_mIoU = 0
     for epoch in range(args.epochs):
         print(f'Start training..')
 
@@ -215,9 +215,9 @@ def train(model_dir, args):
             
 
             # save best model
-            if avg_loss < best_val_loss:
-                best_val_loss = avg_loss
-                print(f"Best performance {best_val_loss} at Epoch {epoch+1}")
+            if mIoU > best_val_mIoU:
+                best_val_mIoU = mIoU
+                print(f"Best performance {best_val_mIoU} at Epoch {epoch+1}")
 
                 torch.save(model, f"{save_dir}/best.pt")
                 print(f"Save best model in {save_dir}")
