@@ -3,7 +3,7 @@
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-
+import os
 
 def _fast_hist(label_true, label_pred, n_class):
     mask = (label_true >= 0) & (label_true < n_class)
@@ -75,6 +75,18 @@ def grid_image(images, masks, preds, n=4, shuffle=False):
 
 
 
+def remove_dot_underbar(root):
+    for path in os.listdir(root):
+        tmp = os.path.join(root,path)
+        if os.path.isdir(tmp):
+            remove_dot_underbar(tmp)
+        if path[0] == '.' and path[1] =='_':
+            os.remove(tmp)
+            print(tmp, 'is removed')
+
+
+# root = './'
+# remove_dot_underbar(root)
 
 
 # def label_accuracy_score(label_trues, label_preds, n_class):
@@ -99,4 +111,5 @@ def grid_image(images, masks, preds, n=4, shuffle=False):
 #     freq = hist.sum(axis=1) / hist.sum()
 #     fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
 #     return acc, acc_cls, mean_iu, fwavacc, iu
+
 
