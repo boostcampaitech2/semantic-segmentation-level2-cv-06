@@ -7,8 +7,7 @@ from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-
-dataset_path = './input/data'
+dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                   'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
 
@@ -29,7 +28,8 @@ class CustomDataLoader(Dataset):
         self.mode = mode
         self.transform = transform
         self.coco = COCO(data_dir)
-    
+        print(os.path.abspath(data_dir))
+        print(os.path.abspath(dataset_path))
     def __getitem__(self, index):
         # dataset이 index되어 list처럼 동작
         image_id = self.coco.getImgIds(imgIds=index)
