@@ -11,7 +11,6 @@ import numpy as np
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 import wandb
 
 from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
