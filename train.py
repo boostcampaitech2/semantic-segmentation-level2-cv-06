@@ -51,11 +51,20 @@ def increment_path(path, exist_ok=False):
         return f"{path}{n}"
 
 
+def createDirectory(save_dir):
+    try:
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+    except OSError:
+        print("Error: Failed to create the directory.")
+
+
 def train(model_dir, args):
     seed_everything(args.seed)
 
     save_dir = increment_path(os.path.join(model_dir, args.name))
-
+    createDirectory(save_dir)
+    
     # settings
     print('pytorch version: {}'.format(torch.__version__))
     print('GPU 사용 가능 여부: {}'.format(torch.cuda.is_available()))
@@ -97,7 +106,8 @@ def train(model_dir, args):
     model = model_module(
         num_classes=n_classes, pretrained=True
     )
-    wandb.watch(model)
+    if args.wandb == True:
+        wandb.watch(model)
 
     # loss & optimizer
     criterion = create_criterion(
