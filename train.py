@@ -108,7 +108,6 @@ def train(model_dir, args):
     optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
 
     # logging   
-    logger = SummaryWriter(log_dir=save_dir)
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
 
@@ -156,8 +155,6 @@ def train(model_dir, args):
                     f"Epoch[{epoch+1}/{args.epochs}] Step [{step+1}/{len(train_loader)}] || "
                     f"training loss {round(loss.item(),4)} || mIoU {round(mIoU,4)} || lr {current_lr}"
                 )
-                logger.add_scalar("Train/loss", round(loss.item(),4), epoch * len(train_loader) + step)
-                logger.add_scalar("Train/mIoU", round(mIoU.item(),4), epoch * len(train_loader) + step)
 
                 # wandb log
                 if args.wandb == True:
@@ -222,10 +219,7 @@ def train(model_dir, args):
                 print(f"Save best model in {save_dir}")
             
             torch.save(model, f"{save_dir}/last.pt")
-            logger.add_scalar("Val/loss", round(avg_loss.item(), 4), epoch)
-            logger.add_scalar("Val/accuracy", round(acc, 4), epoch)
-            logger.add_figure("results", figure, epoch)
-
+            
             # wandb log
             if args.wandb == True:
                 wandb.log({
