@@ -97,7 +97,8 @@ def train(model_dir, args):
     model = model_module(
         num_classes=n_classes, pretrained=True
     )
-    wandb.watch(model)
+    if args.wandb == True:
+        wandb.watch(model)
 
     # loss & optimizer
     criterion = create_criterion(
@@ -108,6 +109,9 @@ def train(model_dir, args):
 
     # 여러 옵티마이저 가능하게 수정 필요
     optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
