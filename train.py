@@ -91,13 +91,19 @@ def train(model_dir, args):
         drop_last=True
     )
 
-    # model
-    n_classes = 11
     
+    n_classes = 11
+    #HRNET option edit
+    if args.model == 'hrnet_ocr':
+        from hrnet.config import cfg
+        cfg.DATASET.NUM_CLASSES = n_classes
+
+    # model
     model_module = getattr(import_module("model"), args.model)
     model = model_module(
         num_classes=n_classes, pretrained=True
     )
+    
 
     if args.wandb == True:
         wandb.watch(model)
@@ -137,11 +143,17 @@ def train(model_dir, args):
             # inference
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                 outputs = model(images)['out']
+                loss = criterion(outputs, masks)
+            elif args.model in ('hrnet_ocr'):
+                cls_out, aux_out, _ = model(images)
+                aux_loss = criterion(aux_out, masks)
+                cls_loss = criterion(cls_out, masks)
+                loss = 0.4 * aux_loss + cls_loss
             else:
                 outputs = model(images)
+                loss = criterion(outputs, masks)
 
             # calculate loss
-            loss = criterion(outputs, masks)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -192,11 +204,17 @@ def train(model_dir, args):
                 # inference
                 if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                     outputs = model(images)['out']
+                    loss = criterion(outputs, masks)
+                elif args.model in ('hrnet_ocr'):
+                    cls_out, aux_out, _ = model(images)
+                    aux_loss = criterion(aux_out, masks)
+                    cls_loss = criterion(cls_out, masks)
+                    loss = 0.4 * aux_loss + cls_loss
                 else:
                     outputs = model(images)
+                    loss = criterion(outputs, masks)
 
                 # calculate loss
-                loss = criterion(outputs, masks)
                 total_loss += loss
                 cnt += 1
 
@@ -252,7 +270,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs to train (default: 10)')
     parser.add_argument('--batch_size', type=int, default=16, help='input batch size for training (default: 16)')
     parser.add_argument('--workers', type=int, default=4, help='number of workers for training (default: 4)')
-    parser.add_argument('--model', type=str, default='FCNRes50', help='model type (default: FCNRes50)')
+    parser.add_argument('--model', type=str, default='hrnet_ocr', help='model type (default: FCNRes50)')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate (default: 1e-4)')
     parser.add_argument('--criterion', type=str, default='cross_entropy', help='criterion type (default: cross_entropy)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')

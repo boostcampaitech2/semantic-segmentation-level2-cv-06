@@ -13,3 +13,5 @@ output/
 
 # wandb
 wandb/
+
+.pth

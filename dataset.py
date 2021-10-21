@@ -8,7 +8,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
-dataset_path = '../input/data'
+dataset_path = './input/data'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                   'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
 

@@ -1,7 +1,19 @@
-import torch
 import torch.nn as nn
 from torchvision import models
 import segmentation_models_pytorch as smp
+from hrnet.ocrnet import HRNet, HRNet_Mscale
+
+class hrnet_ocr(nn.Module):
+    def __init__(self, num_classes, pretrained = True, scale = 'single'):
+        super().__init__()
+        criterion = None
+        if scale == 'single':
+            self.model = HRNet(num_classes, criterion)
+        else:
+            self.model = HRNet_Mscale(num_classes, criterion)
+
+    def foward(self, x):
+        return self.model(x)
 
 
 class FCNRes50(nn.Module):
