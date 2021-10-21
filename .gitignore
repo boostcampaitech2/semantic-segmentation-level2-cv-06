@@ -14,4 +14,4 @@ output/
 # wandb
 wandb/
 
-.pth
+*.pth
