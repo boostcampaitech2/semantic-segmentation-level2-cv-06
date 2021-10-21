@@ -17,6 +17,7 @@ from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
 from loss import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 
+import hrnetv2
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -93,10 +94,12 @@ def train(model_dir, args):
     # model
     n_classes = 11
     
-    model_module = getattr(import_module("model"), args.model)
+    model_module = getattr(import_module("hrnetv2"), args.model)
+    print(model_module)
     model = model_module(
         num_classes=n_classes, pretrained=True
     )
+    print(model)
     if args.wandb == True:
         wandb.watch(model)
 
@@ -139,6 +142,8 @@ def train(model_dir, args):
             # inference
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                 outputs = model(images)['out']
+            elif args.model in ('HighResolutionNet'):
+                _, _, outputs = model(images)
             else:
                 outputs = model(images)
 
