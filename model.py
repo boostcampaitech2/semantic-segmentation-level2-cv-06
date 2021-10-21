@@ -12,7 +12,7 @@ class hrnet_ocr(nn.Module):
         else:
             self.model = HRNet_Mscale(num_classes, criterion)
 
-    def foward(self, x):
+    def forward(self, x):
         return self.model(x)
 
 

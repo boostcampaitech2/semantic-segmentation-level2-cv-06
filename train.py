@@ -145,7 +145,7 @@ def train(model_dir, args):
                 outputs = model(images)['out']
                 loss = criterion(outputs, masks)
             elif args.model in ('hrnet_ocr'):
-                cls_out, aux_out, _ = model(images)
+                cls_out, aux_out = model(images)
                 aux_loss = criterion(aux_out, masks)
                 cls_loss = criterion(cls_out, masks)
                 loss = 0.4 * aux_loss + cls_loss

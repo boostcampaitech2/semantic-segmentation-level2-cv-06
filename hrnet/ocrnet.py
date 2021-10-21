@@ -120,7 +120,7 @@ class OCRNet(nn.Module):
         #     output_dict = {'pred': cls_out}
         #     return output_dict
 
-        return 
+        return cls_out, aux_out
 
 
 class OCRNetASPP(nn.Module):
