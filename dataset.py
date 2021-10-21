@@ -7,10 +7,9 @@ from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-
-dataset_path = './input/data'
-# category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
-#                   'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
+dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/'
+category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
+                  'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
 
 
 def get_classname(classID, cats):
