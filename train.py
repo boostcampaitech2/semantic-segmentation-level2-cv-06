@@ -18,6 +18,7 @@ from loss import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 
 import hrnetv2
+import torch.nn as nn
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -94,12 +95,28 @@ def train(model_dir, args):
     # model
     n_classes = 11
     
-    model_module = getattr(import_module("hrnetv2"), args.model)
-    print(model_module)
-    model = model_module(
+
+    # inference
+    if args.model in ('HighResolutionNet'):
+        # model_module = getattr(import_module("hrnetv2"), args.model)
+        model = hrnetv2.get_seg_model()
+        # print(model['stage4.2.fuse_layers.3.2.0.1.num_batches_tracked'])
+
+        # output class를 data set에 맞도록 수정
+        # model.stage4.classifier[4] = nn.Conv2d(512, 11, kernel_size=1)
+
+        # model = model_module(
+        # num_classes=n_classes, pretrained=True)
+    elif args.model in ('MscaleOCR'):
+        model_module = getattr(import_module("ocrnet"), args.model)
+        model = model_module(
+            num_classes=n_classes)
+    else:
+        model_module = getattr(import_module("model"), args.model)
+        model = model_module(
         num_classes=n_classes, pretrained=True
     )
-    print(model)
+    
     if args.wandb == True:
         wandb.watch(model)
 
@@ -144,6 +161,9 @@ def train(model_dir, args):
                 outputs = model(images)['out']
             elif args.model in ('HighResolutionNet'):
                 _, _, outputs = model(images)
+            elif args.model in ('MscaleOCR'):
+                print('yes')
+                outputs = model(images)
             else:
                 outputs = model(images)
 

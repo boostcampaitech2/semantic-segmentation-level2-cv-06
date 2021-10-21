@@ -18,17 +18,75 @@ import torch.nn as nn
 import torch._utils
 import torch.nn.functional as F
 
-from mynn import Norm2d
+from hrnet.mynn import Norm2d
 from runx.logx import logx
-from attr_dict import AttrDict
+from hrnet.attr_dict import AttrDict
 
-from config import cfg
-
+from hrnet.config import cfg
+import apex
 
 BN_MOMENTUM = 0.1
-align_corners = cfg.MODEL.ALIGN_CORNERS
-# align_corners = False
+# align_corners = cfg.MODEL.ALIGN_CORNERS
+align_corners = False
 relu_inplace = True
+
+
+
+
+cfg.DATASET = AttrDict()
+cfg.DATASET.NUM_CLASSES = 11
+
+cfg.MODEL = AttrDict()
+cfg.MODEL.BN = 'apex-syncnorm'
+cfg.MODEL.BNFUNC = apex.parallel.SyncBatchNorm
+
+
+cfg.MODEL.OCR = AttrDict()
+cfg.MODEL.OCR.MID_CHANNELS = 512
+cfg.MODEL.OCR.KEY_CHANNELS = 256
+cfg.MODEL.OCR_EXTRA = AttrDict()
+cfg.MODEL.OCR_EXTRA.FINAL_CONV_KERNEL = 1
+cfg.MODEL.OCR_EXTRA.STAGE1 = AttrDict()
+cfg.MODEL.OCR_EXTRA.STAGE1.NUM_MODULES = 1
+cfg.MODEL.OCR_EXTRA.STAGE1.NUM_RANCHES = 1
+cfg.MODEL.OCR_EXTRA.STAGE1.BLOCK = 'BOTTLENECK'
+cfg.MODEL.OCR_EXTRA.STAGE1.NUM_BLOCKS = [4]
+cfg.MODEL.OCR_EXTRA.STAGE1.NUM_CHANNELS = [64]
+cfg.MODEL.OCR_EXTRA.STAGE1.FUSE_METHOD = 'SUM'
+cfg.MODEL.OCR_EXTRA.STAGE2 = AttrDict()
+cfg.MODEL.OCR_EXTRA.STAGE2.NUM_MODULES = 1
+cfg.MODEL.OCR_EXTRA.STAGE2.NUM_BRANCHES = 2
+cfg.MODEL.OCR_EXTRA.STAGE2.BLOCK = 'BASIC'
+cfg.MODEL.OCR_EXTRA.STAGE2.NUM_BLOCKS = [4, 4]
+cfg.MODEL.OCR_EXTRA.STAGE2.NUM_CHANNELS = [48, 96]
+cfg.MODEL.OCR_EXTRA.STAGE2.FUSE_METHOD = 'SUM'
+cfg.MODEL.OCR_EXTRA.STAGE3 = AttrDict()
+cfg.MODEL.OCR_EXTRA.STAGE3.NUM_MODULES = 4
+cfg.MODEL.OCR_EXTRA.STAGE3.NUM_BRANCHES = 3
+cfg.MODEL.OCR_EXTRA.STAGE3.BLOCK = 'BASIC'
+cfg.MODEL.OCR_EXTRA.STAGE3.NUM_BLOCKS = [4, 4, 4]
+cfg.MODEL.OCR_EXTRA.STAGE3.NUM_CHANNELS = [48, 96, 192]
+cfg.MODEL.OCR_EXTRA.STAGE3.FUSE_METHOD = 'SUM'
+# cfg.MODEL.OCR_EXTRA.STAGE4 = AttrDict()
+# cfg.MODEL.OCR_EXTRA.STAGE4.NUM_MODULES = 3
+# cfg.MODEL.OCR_EXTRA.STAGE4.NUM_BRANCHES = 1
+# cfg.MODEL.OCR_EXTRA.STAGE4.BLOCK = 'BASIC'
+# cfg.MODEL.OCR_EXTRA.STAGE4.NUM_BLOCKS = [4]
+# cfg.MODEL.OCR_EXTRA.STAGE4.NUM_CHANNELS = [11]
+# cfg.MODEL.OCR_EXTRA.STAGE4.FUSE_METHOD = 'SUM'
+cfg.MODEL.OCR_EXTRA.STAGE4 = AttrDict()
+cfg.MODEL.OCR_EXTRA.STAGE4.NUM_MODULES = 3
+cfg.MODEL.OCR_EXTRA.STAGE4.NUM_BRANCHES = 4
+cfg.MODEL.OCR_EXTRA.STAGE4.BLOCK = 'BASIC'
+cfg.MODEL.OCR_EXTRA.STAGE4.NUM_BLOCKS = [4, 4, 4, 4]
+cfg.MODEL.OCR_EXTRA.STAGE4.NUM_CHANNELS = [48, 96, 192, 384]
+cfg.MODEL.OCR_EXTRA.STAGE4.FUSE_METHOD = 'SUM'
+
+cfg.MODEL.OCR_ASPP = False
+
+cfg.OPTIONS = AttrDict()
+cfg.OPTIONS.INIT_DECODER = False
+
 
 WEIGHTS_PATH = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/assets'
 
@@ -441,21 +499,20 @@ class HighResolutionNet(nn.Module):
         x = self.stage4(x_list)
 
         # Upsampling
-        x0_h, x0_w = x[0].size(2), x[0].size(3)
-        x1 = F.interpolate(x[1], size=(x0_h, x0_w),
-                           mode='bilinear', align_corners=align_corners)
-        x2 = F.interpolate(x[2], size=(x0_h, x0_w),
-                           mode='bilinear', align_corners=align_corners)
-        x3 = F.interpolate(x[3], size=(x0_h, x0_w),
-                           mode='bilinear', align_corners=align_corners)
+        # x0_h, x0_w = x[0].size(2), x[0].size(3)
+        # x1 = F.interpolate(x[1], size=(x0_h, x0_w),
+        #                    mode='bilinear', align_corners=align_corners)
+        # x2 = F.interpolate(x[2], size=(x0_h, x0_w),
+        #                    mode='bilinear', align_corners=align_corners)
+        # x3 = F.interpolate(x[3], size=(x0_h, x0_w),
+        #                    mode='bilinear', align_corners=align_corners)
 
-        feats = torch.cat([x[0], x1, x2, x3], 1)
+        # feats = torch.cat([x[0], x1, x2, x3], 1)
+        feats = torch.cat([x[0]], 1)
 
         return None, None, feats
 
-    # def init_weights(self, pretrained=cfg.MODEL.HRNET_CHECKPOINT):
     def init_weights(self, pretrained=os.path.join(WEIGHTS_PATH, 'hrnetv2_w48_imagenet_pretrained.pth')):
-        logx.msg('=> init weights from normal distribution')
         for name, m in self.named_modules():
             if any(part in name for part in {'cls', 'aux', 'ocr'}):
                 # print('skipped', name)
@@ -469,7 +526,6 @@ class HighResolutionNet(nn.Module):
         if os.path.isfile(pretrained):
             pretrained_dict = torch.load(pretrained,
                                          map_location={'cuda:0': 'cpu'})
-            logx.msg('=> loading pretrained model {}'.format(pretrained))
             model_dict = self.state_dict()
             pretrained_dict = {k.replace('last_layer',
                                          'aux_head').replace('model.', ''): v

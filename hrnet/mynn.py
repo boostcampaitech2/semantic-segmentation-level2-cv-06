@@ -5,16 +5,16 @@ initialization
 import re
 import torch
 import torch.nn as nn
-from config import cfg
+from hrnet.config import cfg
 
 from apex import amp
 
 from runx.logx import logx
-from attr_dict import AttrDict
+from hrnet.attr_dict import AttrDict
 
 
-align_corners = cfg.MODEL.ALIGN_CORNERS
-# align_corners = False
+# align_corners = cfg.MODEL.ALIGN_CORNERS
+align_corners = False
 
 
 def Norm2d(in_channels, **kwargs):
@@ -37,7 +37,6 @@ def initialize_weights(*models):
                 if module.bias is not None:
                     module.bias.data.zero_()
             elif isinstance(module, cfg.MODEL.BNFUNC):
-            # elif isinstance(module, None):
                 module.weight.data.fill_(1)
                 module.bias.data.zero_()
 
@@ -77,7 +76,6 @@ def scale_as(x, y):
     y_size = y.size(2), y.size(3)
 
     if cfg.OPTIONS.TORCH_VERSION >= 1.5:
-    # if 1.7 >= 1.5:
         x_scaled = torch.nn.functional.interpolate(
             x, size=y_size, mode='bilinear',
             align_corners=align_corners)
@@ -93,7 +91,6 @@ def DownX(x, scale_factor):
     scale x to the same size as y
     '''
     if cfg.OPTIONS.TORCH_VERSION >= 1.5:
-    # if 1.7 >= 1.5:
         x_scaled = torch.nn.functional.interpolate(
             x, scale_factor=scale_factor, mode='bilinear',
             align_corners=align_corners, recompute_scale_factor=True)
@@ -109,7 +106,6 @@ def ResizeX(x, scale_factor):
     scale x by some factor
     '''
     if cfg.OPTIONS.TORCH_VERSION >= 1.5:
-    # if 1.8 >= 1.5:
         x_scaled = torch.nn.functional.interpolate(
             x, scale_factor=scale_factor, mode='bilinear',
             align_corners=align_corners, recompute_scale_factor=True)

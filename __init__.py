@@ -6,7 +6,7 @@ import importlib
 import torch
 
 from runx.logx import logx
-from config import cfg
+from hrnet.config import cfg
 
 
 def get_net(args, criterion):
