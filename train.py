@@ -153,6 +153,7 @@ def train(model_dir, args):
                 aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
                 main_loss = criterion(outputs['pred'], masks, do_rmi=True)
                 loss = 0.4 * aux_loss + main_loss
+                loss = loss.mean()
                 outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
             else:
                 loss = criterion(outputs, masks)
@@ -215,8 +216,9 @@ def train(model_dir, args):
                 # calculate loss
                 if args.model in ('OCRNet', 'MscaleOCRNet'):
                     aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
-                    main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                    main_loss = criterion(outputs['pred'], masks, do_rmi=False)
                     loss = 0.4 * aux_loss + main_loss
+                    loss = loss.mean()
                     outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
                 else:
                     loss = criterion(outputs, masks)
