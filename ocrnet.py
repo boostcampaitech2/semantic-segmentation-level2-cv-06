@@ -34,6 +34,20 @@ from hrnet.config import cfg
 from hrnet.misc import fmt_scale
 
 
+INIT_DECODER = False
+MID_CHANNELS = 512
+KEY_CHANNELS = 256
+NUM_CLASSES = 11
+
+OCR_ALPHA = 0.4
+OCR_AUX_RMI = False
+
+MSCALE_LO_SCALE = 0.5
+N_SCALES = [0.5, 1.0, 2.0]
+
+
+
+
 class OCR_block(nn.Module):
     """
     Some of the code in this class is borrowed from:
@@ -42,9 +56,9 @@ class OCR_block(nn.Module):
     def __init__(self, high_level_ch):
         super(OCR_block, self).__init__()
 
-        ocr_mid_channels = cfg.MODEL.OCR.MID_CHANNELS
-        ocr_key_channels = cfg.MODEL.OCR.KEY_CHANNELS
-        num_classes = cfg.DATASET.NUM_CLASSES
+        ocr_mid_channels = MID_CHANNELS
+        ocr_key_channels = KEY_CHANNELS
+        num_classes = NUM_CLASSES
 
         self.conv3x3_ocr = nn.Sequential(
             nn.Conv2d(high_level_ch, ocr_mid_channels,
@@ -70,7 +84,7 @@ class OCR_block(nn.Module):
                       kernel_size=1, stride=1, padding=0, bias=True)
         )
 
-        if cfg.OPTIONS.INIT_DECODER:
+        if INIT_DECODER:
             initialize_weights(self.conv3x3_ocr,
                                self.ocr_gather_head,
                                self.ocr_distri_head,
@@ -108,9 +122,9 @@ class OCRNet(nn.Module):
         if self.training:
             gts = inputs['gts']
             aux_loss = self.criterion(aux_out, gts,
-                                      do_rmi=cfg.LOSS.OCR_AUX_RMI)
+                                      do_rmi=OCR_AUX_RMI)
             main_loss = self.criterion(cls_out, gts)
-            loss = cfg.LOSS.OCR_ALPHA * aux_loss + main_loss
+            loss = OCR_ALPHA * aux_loss + main_loss
             return loss
         else:
             output_dict = {'pred': cls_out}
@@ -142,7 +156,7 @@ class OCRNetASPP(nn.Module):
 
         if self.training:
             gts = inputs['gts']
-            loss = cfg.LOSS.OCR_ALPHA * self.criterion(aux_out, gts) + \
+            loss = OCR_ALPHA * self.criterion(aux_out, gts) + \
                 self.criterion(cls_out, gts)
             return loss
         else:
@@ -160,7 +174,7 @@ class MscaleOCR(nn.Module):
         self.backbone, _, _, high_level_ch = get_trunk(trunk)
         self.ocr = OCR_block(high_level_ch)
         self.scale_attn = make_attn_head(
-            in_ch=cfg.MODEL.OCR.MID_CHANNELS, out_ch=1)
+            in_ch=MID_CHANNELS, out_ch=1)
 
     def _fwd(self, x):
         x_size = x.size()[2:]
@@ -244,7 +258,7 @@ class MscaleOCR(nn.Module):
         if self.training:
             assert 'gts' in inputs
             gts = inputs['gts']
-            loss = cfg.LOSS.OCR_ALPHA * self.criterion(aux, gts) + \
+            loss = OCR_ALPHA * self.criterion(aux, gts) + \
                 self.criterion(pred, gts)
             return loss
         else:
@@ -262,7 +276,7 @@ class MscaleOCR(nn.Module):
         assert 'images' in inputs
         x_1x = inputs['images']
 
-        x_lo = ResizeX(x_1x, cfg.MODEL.MSCALE_LO_SCALE)
+        x_lo = ResizeX(x_1x, MSCALE_LO_SCALE)
         lo_outs = self._fwd(x_lo)
         pred_05x = lo_outs['cls_out']
         p_lo = pred_05x
@@ -288,14 +302,14 @@ class MscaleOCR(nn.Module):
 
         if self.training:
             gts = inputs['gts']
-            do_rmi = cfg.LOSS.OCR_AUX_RMI
+            do_rmi = OCR_AUX_RMI
             aux_loss = self.criterion(joint_aux, gts, do_rmi=do_rmi)
 
             # Optionally turn off RMI loss for first epoch to try to work
             # around cholesky errors of singular matrix
             do_rmi_main = True  # cfg.EPOCH > 0
             main_loss = self.criterion(joint_pred, gts, do_rmi=do_rmi_main)
-            loss = cfg.LOSS.OCR_ALPHA * aux_loss + main_loss
+            loss = OCR_ALPHA * aux_loss + main_loss
 
             # Optionally, apply supervision to the multi-scale predictions
             # directly. Turn off RMI to keep things lightweight
@@ -317,8 +331,8 @@ class MscaleOCR(nn.Module):
 
     def forward(self, inputs):
         
-        if cfg.MODEL.N_SCALES and not self.training:
-            return self.nscale_forward(inputs, cfg.MODEL.N_SCALES)
+        if N_SCALES and not self.training:
+            return self.nscale_forward(inputs, N_SCALES)
 
         return self.two_scale_forward(inputs)
 

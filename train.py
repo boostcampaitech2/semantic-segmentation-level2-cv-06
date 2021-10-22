@@ -114,8 +114,7 @@ def train(model_dir, args):
     else:
         model_module = getattr(import_module("model"), args.model)
         model = model_module(
-        num_classes=n_classes, pretrained=True
-    )
+        num_classes=n_classes, pretrained=True)
     
     if args.wandb == True:
         wandb.watch(model)
@@ -161,9 +160,6 @@ def train(model_dir, args):
                 outputs = model(images)['out']
             elif args.model in ('HighResolutionNet'):
                 _, _, outputs = model(images)
-            elif args.model in ('MscaleOCR'):
-                print('yes')
-                outputs = model(images)
             else:
                 outputs = model(images)
 

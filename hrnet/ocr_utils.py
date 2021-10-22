@@ -10,8 +10,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from hrnet.config import cfg
 from hrnet.utils import BNReLU
+
+
+ALIGN_CORNERS = False
+OCR_ASPP = False
+ASPP_BOT_CH = 256
 
 
 class SpatialGather_Module(nn.Module):
@@ -111,7 +115,7 @@ class ObjectAttentionBlock(nn.Module):
         context = self.f_up(context)
         if self.scale > 1:
             context = F.interpolate(input=context, size=(h, w), mode='bilinear',
-                                    align_corners=cfg.MODEL.ALIGN_CORNERS)
+                                    align_corners=ALIGN_CORNERS)
 
         return context
 
@@ -128,9 +132,9 @@ class SpatialOCR_Module(nn.Module):
         self.object_context_block = ObjectAttentionBlock(in_channels,
                                                          key_channels,
                                                          scale)
-        if cfg.MODEL.OCR_ASPP:
+        if OCR_ASPP:
             self.aspp, aspp_out_ch = get_aspp(
-                in_channels, bottleneck_ch=cfg.MODEL.ASPP_BOT_CH,
+                in_channels, bottleneck_ch=ASPP_BOT_CH,
                 output_stride=8)
             _in_channels = 2 * in_channels + aspp_out_ch
         else:
@@ -146,7 +150,7 @@ class SpatialOCR_Module(nn.Module):
     def forward(self, feats, proxy_feats):
         context = self.object_context_block(feats, proxy_feats)
 
-        if cfg.MODEL.OCR_ASPP:
+        if OCR_ASPP:
             aspp = self.aspp(feats)
             output = self.conv_bn_dropout(torch.cat([context, aspp, feats], 1))
         else:
