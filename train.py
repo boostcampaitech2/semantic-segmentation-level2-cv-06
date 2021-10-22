@@ -170,7 +170,7 @@ def train(model_dir, args):
             acc, acc_cls, mIoU, fwavacc, IoU = label_accuracy_score(hist)
 
             # step 주기에 따른 loss 출력
-            if (step + 1) % args.log_interval == 0:
+            if (i + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
                 print(
                     f"Epoch[{epoch+1}/{args.epochs}] Step [{i+1}/{len(train_loader)}] || "
