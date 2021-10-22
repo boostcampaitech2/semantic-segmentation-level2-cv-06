@@ -126,9 +126,9 @@ def train(model_dir, args):
     category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                       'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
     best_val_mIoU = 0
-    step = 0
     for epoch in range(args.epochs):
         print(f'Start training..')
+        step = 0
 
         # train loop
         model.train()
@@ -149,13 +149,20 @@ def train(model_dir, args):
                 outputs = model(images)
 
             # calculate loss
-            loss = criterion(outputs, masks)
+            if args.model in ('OCRNet', 'MscaleOCRNet'):
+                aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
+                main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                loss = 0.4 * aux_loss + main_loss
+                outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+            else:
+                loss = criterion(outputs, masks)
+                outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             # 데이터 검증
-            outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
             masks = masks.detach().cpu().numpy()
 
             hist = add_hist(hist, masks, outputs, n_class=n_classes)
@@ -206,11 +213,18 @@ def train(model_dir, args):
                     outputs = model(images)
 
                 # calculate loss
-                loss = criterion(outputs, masks)
+                if args.model in ('OCRNet', 'MscaleOCRNet'):
+                    aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
+                    main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                    loss = 0.4 * aux_loss + main_loss
+                    outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+                else:
+                    loss = criterion(outputs, masks)
+                    outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
+
                 total_loss += loss
                 cnt += 1
 
-                outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
                 masks = masks.detach().cpu().numpy()
                 
                 hist = add_hist(hist, masks, outputs, n_class=n_classes)
