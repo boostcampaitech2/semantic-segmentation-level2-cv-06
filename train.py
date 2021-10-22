@@ -126,15 +126,15 @@ def train(model_dir, args):
     category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                       'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
     best_val_mIoU = 0
+    step = 0
     for epoch in range(args.epochs):
         print(f'Start training..')
-        step = 0
 
         # train loop
         model.train()
         
         hist = np.zeros((n_classes, n_classes))
-        for images, masks, _ in train_loader:
+        for i, (images, masks, _) in enumerate(train_loader):
             images = torch.stack(images)
             masks = torch.stack(masks).long()
             
@@ -173,7 +173,7 @@ def train(model_dir, args):
             if (step + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
                 print(
-                    f"Epoch[{epoch+1}/{args.epochs}] Step [{step+1}/{len(train_loader)}] || "
+                    f"Epoch[{epoch+1}/{args.epochs}] Step [{i+1}/{len(train_loader)}] || "
                     f"training loss {round(loss.item(),4)} || mIoU {round(mIoU,4)} || lr {current_lr}"
                 )
 
