@@ -184,7 +184,7 @@ def train(model_dir, args):
                         "Train/Train acc": round(acc.item(), 4),
                         "learning_rate": current_lr
                         },
-                        step=step)
+                        step=step + epoch * step)
 
             step += 1
 
@@ -262,7 +262,7 @@ def train(model_dir, args):
                     "Metric/Plastic_IoU": IoU_by_class[6]['Plastic'], "Metric/Styrofoam_IoU": IoU_by_class[7]['Styrofoam'], "Metric/Plastic_bag_IoU": IoU_by_class[8]['Plastic bag'],
                     "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing']
                     },
-                    step=step)
+                    step=step + epoch * step)
             print()
 
 
