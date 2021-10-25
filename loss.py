@@ -9,6 +9,33 @@ _POS_ALPHA = 5e-4 # add this factor to ensure the AA^T is positive definite
 _IS_SUM = 1 # sum the loss per channel
 
 
+class LabelSmoothingLoss(nn.Module):
+    def __init__(self, classes = 11, smoothing=0.2, dim=-1, weight = None):
+        """if smoothing == 0, it's one-hot method
+           if 0 < smoothing < 1, it's smooth method
+        """
+        super(LabelSmoothingLoss, self).__init__()
+        self.confidence = 1.0 - smoothing
+        self.smoothing = smoothing
+        self.weight = weight
+        self.cls = classes
+        self.dim = dim
+
+    def forward(self, pred, target, do_rmi = False):
+        #do_rmi: dummy var
+        assert 0 <= self.smoothing < 1
+        pred = pred.log_softmax(dim=self.dim)
+
+        if self.weight is not None:
+            pred = pred * self.weight.unsqueeze(0)   
+
+        with torch.no_grad():
+            true_dist = torch.zeros_like(pred)
+            true_dist.fill_(self.smoothing / (self.cls - 1))
+            true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
+        return torch.mean(torch.sum(-true_dist * pred, dim=self.dim))
+
+
 class RMILoss(nn.Module):
     """
     region mutual information
@@ -217,7 +244,8 @@ class FocalLoss(nn.Module):
 _criterion_entropoints = {
     'cross_entropy': nn.CrossEntropyLoss,
     'focal': FocalLoss,
-    'rmi': RMILoss
+    'rmi': RMILoss,
+    'smooth':LabelSmoothingLoss
 }
 
 
