@@ -149,8 +149,21 @@ class OCRNet(nn.Module):
 class MscaleOCRNet(nn.Module):
     def __init__(self, num_classes=11, pretrained=True):
         super().__init__()
-        self.model = HRNet_Mscale(num_classes=num_classes)
-    
+        model = HRNet_Mscale(num_classes=num_classes)
+        if pretrained:
+            checkpoint = torch.load('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/models/weights/cityscapes_trainval_ocr.HRNet_Mscale_nimble-chihuahua.pth')
+            for k in list(checkpoint['state_dict'].keys()):
+                name = k.replace('module.', '')
+                checkpoint['state_dict'][name] = checkpoint['state_dict'].pop(k)
+            
+            model_state = model.state_dict()
+            pretrained_state = checkpoint['state_dict']
+            model_state = {k: v for k, v in model_state.items() if k in pretrained_state}
+            pretrained_state.update(model_state)
+            model.load_state_dict(pretrained_state)
+            print('All keys matched successfully!!')
+        self.model = model
+
     def forward(self, x):
         return self.model(x)
 
