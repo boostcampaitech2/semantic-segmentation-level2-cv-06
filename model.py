@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torchvision import models
-import segmentation_models_pytorch as smp
+# import segmentation_models_pytorch as smp
 from ocrnet import HRNet, HRNet_Mscale
 
 

@@ -13,9 +13,73 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import wandb
 
-from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
+from dataset import CustomDataLoader, collate_fn, train_transform, val_transform, preprocess
 from loss import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
+
+import augmentations
+import torchvision.transforms as transforms
+
+
+def aug(image, preprocess):
+  """Perform AugMix augmentations and compute mixture.
+  Args:
+    image: PIL.Image input image
+    preprocess: Preprocessing function which should return a torch tensor.
+  Returns:
+    mixed: Augmented and mixed image.
+  """
+  aug_list = augmentations.augmentations
+  if args.all_ops:
+    aug_list = augmentations.augmentations_all
+
+  ws = np.float32(np.random.dirichlet([1] * args.mixture_width))
+  m = np.float32(np.random.beta(1, 1))
+
+  mix = torch.zeros_like(preprocess(image))
+  for i in range(args.mixture_width):
+    image_aug = image.copy()
+    depth = args.mixture_depth if args.mixture_depth > 0 else np.random.randint(
+        1, 4)
+    for _ in range(depth):
+      op = np.random.choice(aug_list)
+      image_aug = op(image_aug, args.aug_severity)
+    # Preprocessing commutes since all coefficients are convex
+    print(ws[i])
+    print(preprocess(image_aug).shape)
+    print(mix.shape)
+    
+    mix += ws[i] * preprocess(image_aug)
+
+  mixed = (1 - m) * preprocess(image) + m * mix
+  return mixed
+
+
+class AugMixDataset(torch.utils.data.Dataset):
+  """Dataset wrapper to perform AugMix augmentation."""
+
+  def __init__(self, dataset, preprocess, no_jsd=False):
+    self.dataset = dataset
+    self.preprocess = preprocess
+    self.no_jsd = no_jsd
+
+  def __getitem__(self, i):
+    x, y, _ = self.dataset[i]
+
+
+    trans = transforms.ToPILImage()   
+    x = trans(x)
+
+
+    if self.no_jsd:
+      return aug(image=x, preprocess=self.preprocess), y, _
+    else:
+      im_tuple = (self.preprocess(x), aug(image=x, preprocess=self.preprocess),
+                  aug(image=x, preprocess=self.preprocess))
+      return im_tuple, y, _
+
+  def __len__(self):
+    return len(self.dataset)
 
 
 def seed_everything(seed):
@@ -77,7 +141,12 @@ def train(model_dir, args):
     # dataset
     train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
-    
+
+    print('pass 1')
+    train_dataset = AugMixDataset(train_dataset, preprocess, True)
+    print('pass 2')
+
+
     # data_loader
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -98,6 +167,7 @@ def train(model_dir, args):
         collate_fn=collate_fn,
         drop_last=True
     )
+    print('pass 3')
 
     # model
     n_classes = 11
@@ -134,9 +204,12 @@ def train(model_dir, args):
         model.train()
         
         hist = np.zeros((n_classes, n_classes))
+
+        print('pass 4')
         for images, masks, _ in train_loader:
             images = torch.stack(images)
             masks = torch.stack(masks).long()
+            print('pass 5')
             
             # gpu device 할당
             images, masks = images.to(device), masks.to(device)
@@ -293,6 +366,36 @@ if __name__ == '__main__':
     parser.add_argument('--wandb', type=bool, default=False, help='wandb implement or not (default: False)')
     parser.add_argument('--entity', type=str, default='cider6', help='wandb entity name (default: cider6)')
     parser.add_argument('--project', type=str, default='test', help='wandb project name (default: test)')
+
+    # AugMix
+    parser.add_argument(
+        '--mixture-width',
+        default=3,
+        type=int,
+        help='Number of augmentation chains to mix per augmented example')
+    parser.add_argument(
+        '--mixture-depth',
+        default=-1,
+        type=int,
+        help='Depth of augmentation chains. -1 denotes stochastic depth in [1, 3]')
+    parser.add_argument(
+        '--aug-severity',
+        default=3,
+        type=int,
+        help='Severity of base augmentation operators')
+    parser.add_argument(
+        '--no-jsd',
+        '-nj',
+        default=True,
+        action='store_true',
+        help='Turn off JSD consistency loss.')
+    parser.add_argument(
+        '--all-ops',
+        '-all',
+        default=True,
+        action='store_true',
+        help='Turn on all operations (+brightness,contrast,color,sharpness).')
+
 
     args = parser.parse_args()
     print(args)

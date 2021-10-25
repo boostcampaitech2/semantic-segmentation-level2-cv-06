@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
+from torchvision import transforms
+
 dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                   'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
@@ -63,9 +65,11 @@ class CustomDataLoader(Dataset):
 
             # transform -> albumentations
             if self.transform is not None:
-                transformed = self.transform(image=images, mask=masks)
-                images = transformed["image"]
-                masks = transformed["mask"]
+                # transformed = self.transform(image=images, mask=masks)
+                # images = transformed["image"]
+                # masks = transformed["mask"]
+                images = self.transform(img=images)
+                masks = self.transform(img=masks)
             return images, masks, image_infos
         elif self.mode == 'test':
             # transform -> albumentations
@@ -85,14 +89,40 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 
 
-train_transform = A.Compose([
-    ToTensorV2()
-])
 
-val_transform = A.Compose([
-    ToTensorV2()
-])
+# train_transform = A.Compose([
+#     ToTensorV2()
+# ])
 
-test_transform = A.Compose([
-    ToTensorV2()
+# val_transform = A.Compose([
+#     ToTensorV2()
+# ])
+
+# test_transform = A.Compose([
+#     ToTensorV2()
+# ])
+
+preprocess = transforms.Compose(
+    [transforms.RandomHorizontalFlip(),
+    transforms.RandomCrop(32, padding=4),
+    transforms.ToTensor(),
+    transforms.Normalize([0.5] * 3, [0.5] * 3)]
+    )
+
+
+train_transform = transforms.Compose(
+    # [transforms.RandomHorizontalFlip(),
+    # transforms.RandomCrop(32, padding=4)]
+    [transforms.ToTensor()]
+    )
+
+val_transform = transforms.Compose(
+    # [transforms.RandomHorizontalFlip(),
+    # transforms.RandomCrop(32, padding=4)]
+    [transforms.ToTensor()]
+)
+
+test_transform = transforms.Compose([
+    # transforms.ToTensor()
+    preprocess
 ])
