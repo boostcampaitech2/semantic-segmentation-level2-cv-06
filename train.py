@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 import wandb
 
 from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
-from loss import create_criterion
+from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 
 
@@ -54,7 +54,7 @@ def increment_path(path, exist_ok=False):
 def createDirectory(save_dir):
     try:
         if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
+            os.makedirs(save_dir)
     except OSError:
         print("Error: Failed to create the directory.")
 
@@ -102,7 +102,7 @@ def train(model_dir, args):
     # model
     n_classes = 11
     
-    model_module = getattr(import_module("model"), args.model)
+    model_module = getattr(import_module("models.model"), args.model)
     model = model_module(
         num_classes=n_classes, pretrained=True
     )
@@ -285,7 +285,7 @@ if __name__ == '__main__':
     # Container environment
     parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train.json'))
     parser.add_argument('--val_path', type=str, default=os.environ.get('SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))
-    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './model'))
+    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './runs'))
 
     # wandb
     parser.add_argument('--wandb', type=bool, default=False, help='wandb implement or not (default: False)')

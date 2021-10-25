@@ -9,6 +9,7 @@ baseline_code/
 
 # output
 model/
+runs/
 output/
 
 # wandb
@@ -16,3 +17,13 @@ wandb/
 
 # input 심볼릭 링크로 현재 디렉토리에 불러와서 사용
 input
+
+# git clone 
+nvidia/
+
+# personal
+personal/
+
+# weights
+weights/
+*.pth
