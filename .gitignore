@@ -9,6 +9,7 @@ baseline_code/
 
 # output
 model/
+runs/
 output/
 
 # wandb
@@ -22,3 +23,7 @@ nvidia/
 
 # personal
 personal/
+
+# weights
+weights/
+*.pth
