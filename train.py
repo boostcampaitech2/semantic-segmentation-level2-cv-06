@@ -126,10 +126,11 @@ def train(model_dir, args):
     category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                       'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
     best_val_mIoU = 0
+    step = 0
+
     for epoch in range(args.epochs):
         print(f'Start training..')
-        step = 0
-
+        
         # train loop
         model.train()
         
@@ -184,7 +185,7 @@ def train(model_dir, args):
                         "Train/Train acc": round(acc.item(), 4),
                         "learning_rate": current_lr
                         },
-                        step=step + epoch * step)
+                        step=step)
 
             step += 1
 
@@ -262,8 +263,7 @@ def train(model_dir, args):
                     "Metric/Plastic_IoU": IoU_by_class[6]['Plastic'], "Metric/Styrofoam_IoU": IoU_by_class[7]['Styrofoam'], "Metric/Plastic_bag_IoU": IoU_by_class[8]['Plastic bag'],
                     "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing']
                     },
-                    step=step + epoch * step)
-            print()
+                    step=step)
 
 
 if __name__ == '__main__':
