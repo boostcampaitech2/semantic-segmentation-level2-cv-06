@@ -1,3 +1,6 @@
+# pretrained model
+*.pth
+
 # Byte-compiled
 __pycache__/
 
