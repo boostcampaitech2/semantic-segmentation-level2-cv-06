@@ -1,5 +1,6 @@
 # https://github.com/wkentaro/pytorch-fcn/blob/master/torchfcn/utils.py
 
+import os
 import random
 import numpy as np
 import matplotlib.pyplot as plt
