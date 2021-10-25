@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 import wandb
 
 from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
-from loss import create_criterion
+from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 
 
@@ -102,7 +102,7 @@ def train(model_dir, args):
     # model
     n_classes = 11
     
-    model_module = getattr(import_module("model"), args.model)
+    model_module = getattr(import_module("models.model"), args.model)
     model = model_module(
         num_classes=n_classes, pretrained=True
     )

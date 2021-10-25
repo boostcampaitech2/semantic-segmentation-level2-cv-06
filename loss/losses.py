@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import rmi_utils
+import loss.rmi_utils as rmi_utils
 
 _CLIP_MIN = 1e-6 # min clip value after softmax or sigmoid operations
 _POS_ALPHA = 5e-4 # add this factor to ensure the AA^T is positive definite

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 import segmentation_models_pytorch as smp
-from ocrnet import HRNet, HRNet_Mscale
+from models.ocrnet import HRNet, HRNet_Mscale
 
 
 class FCNRes50(nn.Module):
@@ -151,7 +151,7 @@ class MscaleOCRNet(nn.Module):
         super().__init__()
         model = HRNet_Mscale(num_classes=num_classes)
         if pretrained:
-            checkpoint = torch.load('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/models/weights/cityscapes_trainval_ocr.HRNet_Mscale_nimble-chihuahua.pth')
+            checkpoint = torch.load('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/models/weights/cityscapes_ocrnet.HRNet_Mscale_outstanding-turtle.pth')
             for k in list(checkpoint['state_dict'].keys()):
                 name = k.replace('module.', '')
                 checkpoint['state_dict'][name] = checkpoint['state_dict'].pop(k)
