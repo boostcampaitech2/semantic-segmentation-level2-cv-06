@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
+from train import RandomAugMix
+
 
 dataset_path = './input/data'
 # category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
@@ -87,6 +89,7 @@ def collate_fn(batch):
 
 
 train_transform = A.Compose([
+    RandomAugMix(severity=3, width=3, alpha=1., p=1.),
     ToTensorV2()
 ])
 
