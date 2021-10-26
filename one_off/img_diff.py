@@ -52,7 +52,7 @@ for cat in categories:
 category_names.insert(0,'Background')
 # category_names
 
-class_colormap = pd.read_csv("./class_dict.csv")
+class_colormap = pd.read_csv("../class_dict.csv")
 # class_colormap
 
 def get_classname(classID, cats):
@@ -141,7 +141,7 @@ class CustomDataLoader2(Dataset):
             masks = np.zeros((image_infos["height"], image_infos["width"]))
             # General trash = 1, ... , Cigarette = 10
             # anns = sorted(anns, key=lambda idx : idx['area'], reverse=True)
-            # anns = sorted(anns, key=lambda idx: len(idx['segmentation'][0]), reverse=True)
+            anns = sorted(anns, key=lambda idx: len(idx['segmentation'][0]), reverse=True)
             for i in range(len(anns)):
                 className = get_classname(anns[i]['category_id'], cats)
                 pixel_value = category_names.index(className)
@@ -192,6 +192,8 @@ train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2,
 figsize=8
 
 for idx, (imgs, masks, image_infos, masks2) in enumerate(tqdm(train_loader2)):
+    if idx < 2000:
+        continue
     if torch.any(torch.ne(masks[0], masks2[0])).item() == True:
         fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(figsize*4, figsize))
 

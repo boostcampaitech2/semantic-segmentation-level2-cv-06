@@ -147,22 +147,29 @@ class OCRNet(nn.Module):
 
 
 class MscaleOCRNet(nn.Module):
+    class module(nn.Module):
+        def __init__(self, num_classes=11):
+            super().__init__()
+            self.module = HRNet_Mscale(num_classes=num_classes)
+
     def __init__(self, num_classes=11, pretrained=True):
         super().__init__()
-        model = HRNet_Mscale(num_classes=num_classes)
+        self.model = self.module(num_classes = num_classes)
         if pretrained:
             checkpoint = torch.load('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/models/weights/cityscapes_ocrnet.HRNet_Mscale_outstanding-turtle.pth')
-            for k in list(checkpoint['state_dict'].keys()):
-                name = k.replace('module.', '')
-                checkpoint['state_dict'][name] = checkpoint['state_dict'].pop(k)
+            checkpoint = checkpoint['state_dict']
+            model_state_dict = self.model.state_dict()
             
-            model_state = model.state_dict()
-            pretrained_state = checkpoint['state_dict']
-            model_state = {k: v for k, v in model_state.items() if k in pretrained_state}
-            pretrained_state.update(model_state)
-            model.load_state_dict(pretrained_state)
-            print('All keys matched successfully!!')
-        self.model = model
+            for k in model_state_dict.keys():
+                if k not in checkpoint:
+                    raise Exception("model state dict load key error")
+                elif model_state_dict[k].size() == checkpoint[k].size():
+                    model_state_dict[k] = checkpoint[k]
+                else:
+                    print(f"model state dict load skip {k}")
+
+            self.model.load_state_dict(model_state_dict)
+
 
     def forward(self, x):
         return self.model(x)
