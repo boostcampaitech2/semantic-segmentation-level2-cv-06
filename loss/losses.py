@@ -225,7 +225,7 @@ class RMILoss(nn.Module):
 class FocalLoss(nn.Module):
     def __init__(self, weight=None,
                  gamma=2., reduction='mean'):
-        nn.Module.__init__(self)
+        super().__init__()
         self.weight = weight
         self.gamma = gamma
         self.reduction = reduction
