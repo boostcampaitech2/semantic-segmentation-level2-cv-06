@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 import segmentation_models_pytorch as smp
+from models.hrnetv2 import HighResolutionNet
 from models.ocrnet import HRNet, HRNet_Mscale
 
 
@@ -137,6 +138,14 @@ class DeepLabV3_Plus(nn.Module):
         return self.model(x)
 
 
+class HRNetV2(nn.Module):
+    def __init__(self, num_classes=11, pretrained=True):
+        self.model = HighResolutionNet()
+
+    def forward(self, x):
+        return self.model(x)
+
+
 class OCRNet(nn.Module):
     def __init__(self, num_classes=11, pretrained=True):
         super().__init__()
@@ -147,16 +156,14 @@ class OCRNet(nn.Module):
 
 
 class MscaleOCRNet(nn.Module):
-    class module(nn.Module):
-        def __init__(self, num_classes=11):
-            super().__init__()
-            self.module = HRNet_Mscale(num_classes=num_classes)
-
     def __init__(self, num_classes=11, pretrained=True):
         super().__init__()
-        self.model = self.module(num_classes = num_classes)
+        self.model = HRNet_Mscale(num_classes=num_classes)
         if pretrained:
             checkpoint = torch.load('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/models/weights/cityscapes_ocrnet.HRNet_Mscale_outstanding-turtle.pth')
+            for k in list(checkpoint['state_dict'].keys()):
+                name = k.replace('module.', '')
+                checkpoint['state_dict'][name] = checkpoint['state_dict'].pop(k)
             checkpoint = checkpoint['state_dict']
             model_state_dict = self.model.state_dict()
             
@@ -169,7 +176,6 @@ class MscaleOCRNet(nn.Module):
                     print(f"model state dict load skip {k}")
 
             self.model.load_state_dict(model_state_dict)
-
 
     def forward(self, x):
         return self.model(x)
