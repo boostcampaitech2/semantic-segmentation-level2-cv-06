@@ -138,14 +138,6 @@ class DeepLabV3_Plus(nn.Module):
         return self.model(x)
 
 
-class HRNetV2(nn.Module):
-    def __init__(self, num_classes=11, pretrained=True):
-        self.model = HighResolutionNet()
-
-    def forward(self, x):
-        return self.model(x)
-
-
 class OCRNet(nn.Module):
     def __init__(self, num_classes=11, pretrained=True):
         super().__init__()
