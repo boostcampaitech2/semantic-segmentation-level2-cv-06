@@ -267,6 +267,10 @@ def train(model_dir, args):
                     step=step)
             print()
 
+def check_args(args):
+    if (args.model in ('OCRNet', 'MscaleOCRNet')) ^ (args.criterion in ('rmi', 'smooth')):
+        raise Exception(f"not match error model and criterion. {args.model}, {args.criterion}")
+    return True
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -293,6 +297,8 @@ if __name__ == '__main__':
     parser.add_argument('--project', type=str, default='test', help='wandb project name (default: test)')
 
     args = parser.parse_args()
+
+    check_args(args)
     print(args)
 
     # wandb init
