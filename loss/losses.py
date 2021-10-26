@@ -14,7 +14,7 @@ class LabelSmoothingLoss(nn.Module):
         """if smoothing == 0, it's one-hot method
            if 0 < smoothing < 1, it's smooth method
         """
-        super(LabelSmoothingLoss, self).__init__()
+        super().__init__()
         self.confidence = 1.0 - smoothing
         self.smoothing = smoothing
         self.weight = weight
