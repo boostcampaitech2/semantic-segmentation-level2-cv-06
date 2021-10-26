@@ -27,3 +27,6 @@ personal/
 # weights
 weights/
 *.pth
+
+# system
+.ipynb_*/
