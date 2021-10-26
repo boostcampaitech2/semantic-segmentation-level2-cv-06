@@ -81,18 +81,18 @@ class CustomDataLoader(Dataset):
         return len(self.coco.getImgIds())
 
 
-def collate_fn(batch):
-    return tuple(zip(*batch))
+# def collate_fn(batch):
+#     return tuple(zip(*batch))
 
 
-train_transform = A.Compose([
-    ToTensorV2()
-])
+# train_transform = A.Compose([
+#     ToTensorV2()
+# ])
 
-val_transform = A.Compose([
-    ToTensorV2()
-])
+# val_transform = A.Compose([
+#     ToTensorV2()
+# ])
 
-test_transform = A.Compose([
-    ToTensorV2()
-])
+# test_transform = A.Compose([
+#     ToTensorV2()
+# ])
