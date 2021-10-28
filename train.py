@@ -13,7 +13,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import wandb
 
-from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
+from dataset import CustomDataLoader, Custom_CocoDetectionCP, train_transform, val_transform, make_final_mask
+from coco import CocoDetectionCP
+
 from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 
@@ -75,7 +77,10 @@ def train(model_dir, args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # dataset
-    train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
+    train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
+    '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train.json', # annfile
+    train_transform)
+
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
     
     # data_loader
@@ -95,7 +100,7 @@ def train(model_dir, args):
         num_workers=args.workers,
         shuffle=False,
         pin_memory=use_cuda,
-        collate_fn=collate_fn,
+        # collate_fn=collate_fn,
         drop_last=True
     )
 

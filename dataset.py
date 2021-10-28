@@ -7,6 +7,12 @@ from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
+
+# copy paste 
+from copy_paste import CopyPaste
+from coco import CocoDetectionCP
+
+
 dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                   'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
@@ -36,7 +42,7 @@ class CustomDataLoader(Dataset):
     def __getitem__(self, index):
         # dataset이 index되어 list처럼 동작
         image_id = self.coco.getImgIds(imgIds=index)
-        image_infos = self.coco.loadImgs(image_id)[0]
+        # image_infos = self.coco.loadImgs(image_id)[0]
 
         # cv2를 활용하여 image 불러오기
         images = cv2.imread(os.path.join(dataset_path, image_infos['file_name']))
@@ -47,7 +53,7 @@ class CustomDataLoader(Dataset):
             ann_ids = self.coco.getAnnIds(imgIds=image_infos['id'])
             anns = self.coco.loadAnns(ann_ids)
 
-            # masks : size가 (height x width)인 2D
+            # masks : size가 (height x width)인 2D          
             # 각각의 pixel 값에는 "category id" 할당
             # Background = 0
             masks = np.zeros((image_infos["height"], image_infos["width"]))
@@ -55,9 +61,6 @@ class CustomDataLoader(Dataset):
             # General trash = 1, ... , Clothing = 10
             anns = sorted(anns, key=lambda idx: idx['area'], reverse=True)
             for i in range(len(anns)):
-                # className = get_classname(anns[i]['category_id'], self.cats)
-                # pixel_value = category_names.index(className)
-                # masks[self.coco.annToMask(anns[i])==1] = pixel_value
                 masks[self.coco.annToMask(anns[i])==1] = anns[i]['category_id']
             masks = masks.astype(np.int8)
 
@@ -66,13 +69,13 @@ class CustomDataLoader(Dataset):
                 transformed = self.transform(image=images, mask=masks)
                 images = transformed["image"]
                 masks = transformed["mask"]
-            return images, masks, image_infos
+            return images, masks
         elif self.mode == 'test':
             # transform -> albumentations
             if self.transform is not None:
                 transformed = self.transform(image=images)
                 images = transformed["image"]
-            return images, image_infos
+            return images
         else:
             raise RuntimeError("CustomDataLoader mode error")
     
@@ -80,19 +83,54 @@ class CustomDataLoader(Dataset):
         # 전체 dataset의 size를 return
         return len(self.coco.getImgIds())
 
+class Custom_CocoDetectionCP(CocoDetectionCP):
+    root = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data'
+    annFile = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train_all.json'
+    def __init__(self, transforms, root=root, annFile=annFile):
+        super(Custom_CocoDetectionCP, self).__init__()
 
-# def collate_fn(batch):
-#     return tuple(zip(*batch))
+def make_final_mask(data):
+    image = data['image']
+    bboxes = data['bboxes']
+    masks = data['masks']
+
+    category = [c[-2] for c in bboxes]
+
+    final_masks = np.zeros((512, 512))
+    pmasks = [[m, c] for m, c in zip(masks, category)]
+    pmasks = sorted(pmasks, key= lambda x: len(x[0]), reverse=True)
+
+    for i in range(len(pmasks)):
+        final_masks[pmasks[i][0]==1] = pmasks[i][1]
+        print(pmasks[i][1])
+    final_masks = final_masks.astype(np.int8)
+    final_masks = torch.tensor(final_masks)
+    return image, final_masks
+
+
+def collate_fn(batch):
+    new_batch = []
+    for i in batch:
+        new_batch.append(make_final_mask(i))
+    return new_batch
 
 
 # train_transform = A.Compose([
 #     ToTensorV2()
 # ])
+train_transform = A.Compose([
+        # A.RandomScale(scale_limit=(-0.9, 1), p=1), #LargeScaleJitter from scale of 0.1 to 2
+        # A.PadIfNeeded(512, 512, border_mode=0), #pads with image in the center, not the top left like the paper
+        # A.RandomCrop(512, 512),
+        CopyPaste(blend=True, sigma=1, pct_objects_paste=0.8, p=1.), #pct_objects_paste is a guess
+        ToTensorV2()
+    ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
+)
 
-# val_transform = A.Compose([
-#     ToTensorV2()
-# ])
+val_transform = A.Compose([
+    ToTensorV2()
+])
 
-# test_transform = A.Compose([
-#     ToTensorV2()
-# ])
+test_transform = A.Compose([
+    ToTensorV2()
+])

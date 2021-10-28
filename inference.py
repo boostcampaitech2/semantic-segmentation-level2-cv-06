@@ -25,7 +25,7 @@ def inference(model_dir, args):
         num_workers=4,
         shuffle=False,
         pin_memory=use_cuda,
-        collate_fn=collate_fn
+        # collate_fn=collate_fn
     )
 
     model_module = getattr(import_module("model"), args.model)
