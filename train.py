@@ -135,6 +135,7 @@ def train(model_dir, args):
         
         hist = np.zeros((n_classes, n_classes))
         for images, masks, _ in train_loader:
+
             images = torch.stack(images)
             masks = torch.stack(masks).long()
             
@@ -184,7 +185,7 @@ def train(model_dir, args):
                         "Train/Train acc": round(acc.item(), 4),
                         "learning_rate": current_lr
                         },
-                        step = step + epoch * 218)
+                        step = step + epoch * int(2616 / args.batch_size))
 
             step += 1
 
@@ -262,7 +263,7 @@ def train(model_dir, args):
                     "Metric/Plastic_IoU": IoU_by_class[6]['Plastic'], "Metric/Styrofoam_IoU": IoU_by_class[7]['Styrofoam'], "Metric/Plastic_bag_IoU": IoU_by_class[8]['Plastic bag'],
                     "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing']
                     },
-                    step = step + epoch * 218)
+                    step = step + epoch * int(2616 / args.batch_size))
 
 
 if __name__ == '__main__':

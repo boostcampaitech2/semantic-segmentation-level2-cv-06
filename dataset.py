@@ -6,10 +6,12 @@ from torch.utils.data import Dataset
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+import torch
 
 from PIL import Image, ImageOps, ImageEnhance
-from albumentations.core.transforms_interface import ImageOnlyTransform
+from albumentations.core.transforms_interface import ImageOnlyTransform, DualTransformCustom
 from albumentations.augmentations import functional as F
+
 
 dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
@@ -72,6 +74,7 @@ class CustomDataLoader(Dataset):
                 transformed = self.transform(image=images, mask=masks)
                 images = transformed["image"]
                 masks = transformed["mask"]
+
             return images, masks, image_infos
         elif self.mode == 'test':
             # transform -> albumentations
@@ -89,7 +92,6 @@ class CustomDataLoader(Dataset):
 
 def collate_fn(batch):
     return tuple(zip(*batch))
-
 
 def int_parameter(level, maxval):
     """Helper function to scale `val` between 0 and maxval .
@@ -205,13 +207,16 @@ def sharpness(pil_img, level):
 
 
 augmentations = [
-    autocontrast, equalize, posterize, rotate, solarize, shear_x, shear_y,
+    autocontrast, equalize, posterize, solarize, 
+    rotate, shear_x, shear_y,
     translate_x, translate_y
 ]
 
 augmentations_all = [
-    autocontrast, equalize, posterize, rotate, solarize, shear_x, shear_y,
-    translate_x, translate_y, color, contrast, brightness, sharpness
+    autocontrast, equalize, posterize, solarize, 
+    rotate, shear_x, shear_y,
+    translate_x, translate_y, 
+    color, contrast, brightness, sharpness
 ]
 
 def normalize(image):
@@ -220,10 +225,13 @@ def normalize(image):
 
 def apply_op(image, op, severity):
     #   image = np.clip(image, 0, 255)
+
     image = image * 255
-    image = image.astype(np.float32)
+    image = image.astype(np.uint8)
+    
     pil_img = Image.fromarray(image)  # Convert to PIL.Image
     pil_img = op(pil_img, severity)
+
     return np.asarray(pil_img)
 
 def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
@@ -253,8 +261,12 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
         mix += ws[i] * image_aug
 #         mix += ws[i] * normalize(image_aug)
 
-    mixed = (1 - m) * image + m * mix
-#     mixed = (1 - m) * normalize(image) + m * mix
+    mixed = m * image + (1 - m) * mix
+#   mixed = (1 - m) * image + m * mix
+#   mixed = (1 - m) * normalize(image) + m * mix
+
+    mixed /= 255
+    
     return mixed
 
 
@@ -278,9 +290,8 @@ class RandomAugMix(ImageOnlyTransform):
         return image
 
 
-
 train_transform = A.Compose([
-    RandomAugMix(severity=3, width=3, alpha=1., p=1.),
+    RandomAugMix(severity=3, width=3, depth=-1, alpha=1., p=1),
     ToTensorV2()
 ])
 

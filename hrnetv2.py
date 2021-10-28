@@ -430,7 +430,7 @@ class HighResolutionNet(nn.Module):
 
         return None, None, feats
 
-    def init_weights(self, pretrained='/opt/ml/segmentation/semantic-segmentation-level2-cv-06/HRNet/hrnetv2_w48_imagenet_pretrained.pth'):
+    def init_weights(self, pretrained='/opt/ml/segmentation/semantic-segmentation-level2-cv-06/models/weights/hrnetv2_w48_imagenet_pretrained.pth'):
         for name, m in self.named_modules():
             if any(part in name for part in {'cls', 'aux', 'ocr'}):
                 # print('skipped', name)
