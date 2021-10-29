@@ -69,11 +69,19 @@ class CustomDataLoader(Dataset):
                 masks[self.coco.annToMask(anns[i])==1] = anns[i]['category_id']
             masks = masks.astype(np.int8)
 
-            # transform -> albumentations
+            # [기존] transform -> albumentations
             if self.transform is not None:
                 transformed = self.transform(image=images, mask=masks)
                 images = transformed["image"]
                 masks = transformed["mask"]
+
+
+            # [마스크 돌리기] transform -> albumentations
+            # if self.tr            ansform is not None:
+            #     transformed = self.transform(imageAndMask=[images, masks])
+            #     images, masks = transformed["imageAndMask"]
+            # images = (torch.from_numpy(images)).permute([2,0,1])
+            # masks = torch.from_numpy(masks)
 
             return images, masks, image_infos
         elif self.mode == 'test':
@@ -89,9 +97,6 @@ class CustomDataLoader(Dataset):
         # 전체 dataset의 size를 return
         return len(self.coco.getImgIds())
 
-
-def collate_fn(batch):
-    return tuple(zip(*batch))
 
 def int_parameter(level, maxval):
     """Helper function to scale `val` between 0 and maxval .
@@ -208,8 +213,8 @@ def sharpness(pil_img, level):
 
 augmentations = [
     autocontrast, equalize, posterize, solarize, 
-    rotate, shear_x, shear_y,
-    translate_x, translate_y
+    # rotate, shear_x, shear_y,
+    # translate_x, translate_y
 ]
 
 augmentations_all = [
@@ -255,19 +260,17 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
         image_aug = image.copy()
         depth = depth if depth > 0 else np.random.randint(1, 4)
         for _ in range(depth):
-            op = np.random.choice(augmentations)
+            op = np.random.choice(augmentations_all)
             image_aug = apply_op(image_aug, op, severity)
         # Preprocessing commutes since all coefficients are convex
         mix += ws[i] * image_aug
 #         mix += ws[i] * normalize(image_aug)
 
-    mixed = m * image + (1 - m) * mix
-#   mixed = (1 - m) * image + m * mix
-#   mixed = (1 - m) * normalize(image) + m * mix
+    # mixed = (1 - m) * image + m * mix
+    mixed = m * (image * 255) + (1 - m) * mix
+    # mixed = (1 - m) * normalize(image) + m * mix
 
-    mixed /= 255
-    
-    return mixed
+    return mixed  / 255
 
 
 class RandomAugMix(ImageOnlyTransform):
@@ -291,7 +294,7 @@ class RandomAugMix(ImageOnlyTransform):
 
 
 train_transform = A.Compose([
-    RandomAugMix(severity=3, width=3, depth=-1, alpha=1., p=1),
+    RandomAugMix(severity=3, width=3, alpha=1., p=1),
     ToTensorV2()
 ])
 
