@@ -183,7 +183,8 @@ def train(model_dir, args):
                         "Train/Train loss": round(loss.item(), 4),
                         "Train/Train mIoU": round(mIoU.item(), 4),
                         "Train/Train acc": round(acc.item(), 4),
-                        "learning_rate": current_lr
+                        "learning_rate": current_lr,
+                        "epoch":epoch+1
                         },
                         step = step + epoch * int(2616 / args.batch_size))
 
@@ -261,7 +262,8 @@ def train(model_dir, args):
                     "Metric/Background_IoU": IoU_by_class[0]['Background'], "Metric/General_trash_IoU": IoU_by_class[1]['General trash'], "Metric/Paper_IoU": IoU_by_class[2]['Paper'],
                     "Metric/Paper_pack_IoU": IoU_by_class[3]['Paper pack'], "Metric/Metal_IoU": IoU_by_class[4]['Metal'], "Metric/Glass_IoU": IoU_by_class[5]['Glass'],
                     "Metric/Plastic_IoU": IoU_by_class[6]['Plastic'], "Metric/Styrofoam_IoU": IoU_by_class[7]['Styrofoam'], "Metric/Plastic_bag_IoU": IoU_by_class[8]['Plastic bag'],
-                    "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing']
+                    "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing'],
+                    "epoch":epoch+1
                     },
                     step = step + epoch * int(2616 / args.batch_size))
 
