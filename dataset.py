@@ -98,6 +98,10 @@ class CustomDataLoader(Dataset):
         return len(self.coco.getImgIds())
 
 
+def collate_fn(batch):
+    return tuple(zip(*batch))
+
+
 def int_parameter(level, maxval):
     """Helper function to scale `val` between 0 and maxval .
     Args:
