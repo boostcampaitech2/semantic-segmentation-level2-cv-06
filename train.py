@@ -6,6 +6,7 @@ import re
 import random
 from pathlib import Path
 from importlib import import_module
+from cv2 import transform
 
 import numpy as np
 import torch
@@ -16,6 +17,8 @@ import wandb
 from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
 from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
+#tmp import for testing
+from one_off.transform_test import transform_custom
 
 
 def seed_everything(seed):
@@ -74,10 +77,17 @@ def train(model_dir, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
+    #transform selector
+    if args.custom_trs:
+        #override
+        custom = transform_custom(args.seed, p = 0.3)
+        train_transform = custom.transform_img
+
     # dataset
     train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
-    
+
+
     # data_loader
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -137,11 +147,11 @@ def train(model_dir, args):
         for i, (images, masks, _) in enumerate(train_loader):
             images = torch.stack(images)
             masks = torch.stack(masks).long()
-            
+
             # gpu device 할당
             images, masks = images.to(device), masks.to(device)
             model = model.to(device)
-
+            
             # inference
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                 outputs = model(images)['out']
@@ -285,6 +295,7 @@ if __name__ == '__main__':
     parser.add_argument('--criterion', type=str, default='cross_entropy', help='criterion type (default: cross_entropy)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
+    parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
     
     # Container environment
     parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train.json'))
