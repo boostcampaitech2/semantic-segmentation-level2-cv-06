@@ -19,6 +19,7 @@ from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 #tmp import for testing
 from one_off.transform_test import transform_custom
+from tqdm import tqdm
 
 
 def seed_everything(seed):
@@ -77,11 +78,13 @@ def train(model_dir, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    #transform selector
+    # transform selector
     if args.custom_trs:
         #override
         custom = transform_custom(args.seed, p = 0.3)
         train_transform = custom.transform_img
+    else:
+        from dataset import train_transform
 
     # dataset
     train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
@@ -203,13 +206,13 @@ def train(model_dir, args):
         with torch.no_grad():
             print("Calculating validation results...")
             model.eval()
-            
+
             total_loss = 0
             cnt = 0
             figure = None
 
             hist = np.zeros((n_classes, n_classes))
-            for images, masks, _ in val_loader:
+            for images, masks, _ in tqdm(val_loader, leave=False):
                 images = torch.stack(images)
                 masks = torch.stack(masks).long()
 
@@ -278,7 +281,7 @@ def train(model_dir, args):
             print()
 
 def check_args(args):
-    if (args.model in ('OCRNet', 'MscaleOCRNet')) ^ (args.criterion in ('rmi', 'smooth')):
+    if (args.model in ('OCRNet', 'MscaleOCRNet')) ^ (args.criterion in ('rmi', 'smooth', 'dice')):
         raise Exception(f"not match error model and criterion. {args.model}, {args.criterion}")
     return True
 
@@ -308,6 +311,12 @@ if __name__ == '__main__':
     parser.add_argument('--project', type=str, default='test', help='wandb project name (default: test)')
 
     args = parser.parse_args()
+    
+    # #test script for debugging. must not commit
+    # args.custom_trs = True
+    # args.criterion = 'dice'
+    # args.model = 'TransUnet'
+    # args.batch_size = 8
 
     check_args(args)
     print(args)

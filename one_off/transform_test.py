@@ -50,14 +50,15 @@ class transform_custom():
 
         self.elastic = elastic_transform
         self.transform = A.Compose([
-            trans.Blur(p=0.5),
+            # trans.Blur(p=0.5),
             A.OneOf([
-                trans.ColorJitter(p = 1),
-                A.ShiftScaleRotate(rotate_limit=5, p=1, border_mode=cv2.BORDER_CONSTANT),
-                A.HorizontalFlip(p=1),
-                A.VerticalFlip(p=1),  
+                # trans.ColorJitter(p = 1),
+                A.augmentations.geometric.rotate.RandomRotate90(),
+                A.ShiftScaleRotate(rotate_limit=0, p=0.5, border_mode=cv2.BORDER_CONSTANT),
+                A.HorizontalFlip(p=0.5),
+                # A.VerticalFlip(p=0.5),  
             ], p=0.5),
-            trans.GridDropout(p=0.5, random_offset=True, unit_size_min = 2, unit_size_max=20, mask_fill_value = 0),  
+            # trans.GridDropout(p=0.5, random_offset=True, unit_size_min = 2, unit_size_max=20, mask_fill_value = 0),  
             A.pytorch.ToTensorV2()
         ])
         self.p = p
