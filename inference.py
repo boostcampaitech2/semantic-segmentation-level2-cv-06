@@ -6,7 +6,7 @@ from tqdm import tqdm
 from importlib import import_module
 
 import torch
-from dataset import CustomDataLoader, collate_fn, test_transform
+from dataset import CustomDataLoader, train_transform, val_transform, test_transform, train_collate_fn, test_collate_fn
 from torch.utils.data import DataLoader
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -28,7 +28,7 @@ def inference(model_dir, args):
         # collate_fn=collate_fn
     )
 
-    model_module = getattr(import_module("model"), args.model)
+    model_module = getattr(import_module("models.model"), args.model)
     model = model_module(
         num_classes=11, pretrained=True
     )
@@ -48,18 +48,18 @@ def inference(model_dir, args):
     preds_array = np.empty((0, size*size), dtype=np.compat.long)
 
     with torch.no_grad():
-        for step, (imgs, image_infos) in enumerate(tqdm(test_loader)):
+        for step, imgs in enumerate(tqdm(test_loader)):
 
             # inference (512 x 512)
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
-                outs = model(torch.stack(imgs).to(device))['out']
+                outs = model(imgs.to(device))['out']
             else:
-                outs = model(torch.stack(imgs).to(device))
+                outs = model(imgs.to(device))
             oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
 
             # resize (256 x 256)
             temp_mask = []
-            for img, mask in zip(np.stack(imgs), oms):
+            for img, mask in zip(imgs, oms):
                 transformed = transform(image=img, mask=mask)
                 mask = transformed['mask']
                 temp_mask.append(mask)
@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
     # Container environment
     parser.add_argument('--test_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/test.json'))
-    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model'))
+    parser.add_argument('--model_di', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model'))
     parser.add_argument('--output_dir', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR', './output'))
 
     args = parser.parse_args()
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
 
     # load sample_submission.csv
-    submission = pd.read_csv('./baseline_code/submission/sample_submission.csv', index_col=None)
+    submission = pd.read_csv('../baseline_code/submission/sample_submission.csv', index_col=None)
 
     # prediction using test set
     file_names, preds = inference(model_dir, args)

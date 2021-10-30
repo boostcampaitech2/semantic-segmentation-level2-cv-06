@@ -63,7 +63,7 @@ def grid_image(images, masks, preds, n=4, shuffle=False):
         pred = preds[choice]
 
         ax[idx*3] = figure.add_subplot(gs[idx, 0])
-        ax[idx*3].imshow(image)
+        ax[idx*3].imshow(image)    
         ax[idx*3].grid(False)
 
         ax[idx*3+1] = figure.add_subplot(gs[idx, 1])

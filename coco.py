@@ -57,7 +57,8 @@ class CocoDetectionCP(CocoDetection):
 
         path = self.coco.loadImgs(img_id)[0]['file_name']
         image = cv2.imread(os.path.join(self.root, path))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
+        image /= 255.0
         
 
         #convert all of the target segmentations to masks

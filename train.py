@@ -13,7 +13,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import wandb
 
-from dataset import CustomDataLoader, Custom_CocoDetectionCP, train_transform, val_transform, make_final_mask
+from dataset import CustomDataLoader, train_transform, val_transform, train_collate_fn, test_collate_fn
 from coco import CocoDetectionCP
 
 from loss.losses import create_criterion
@@ -90,7 +90,7 @@ def train(model_dir, args):
         num_workers=args.workers,
         shuffle=True,
         pin_memory=use_cuda,
-        collate_fn=collate_fn,
+        collate_fn=train_collate_fn,
         drop_last=True
     )
 
@@ -100,7 +100,7 @@ def train(model_dir, args):
         num_workers=args.workers,
         shuffle=False,
         pin_memory=use_cuda,
-        # collate_fn=collate_fn,
+        # collate_fn=test_collate_fn,
         drop_last=True
     )
 
@@ -139,8 +139,18 @@ def train(model_dir, args):
         model.train()
         
         hist = np.zeros((n_classes, n_classes))
-        for i, (images, masks, _) in enumerate(train_loader):
+        # a = next(iter(train_loader))
+        # print('type', type(a))
+        # print('atype', type(a[0]))
+        # print('len', len(a))
+        # print('alen', len(a[0]))
+        # print(a[0][0].shape, a[0][1].shape)
+        figure = None
+            
+
+        for i, (images, masks) in enumerate(train_loader):
             images = torch.stack(images)
+            # print('after stack!!',images[0].shape)
             masks = torch.stack(masks).long()
             
             # gpu device 할당
@@ -174,6 +184,9 @@ def train(model_dir, args):
             hist = add_hist(hist, masks, outputs, n_class=n_classes)
             acc, acc_cls, mIoU, fwavacc, IoU = label_accuracy_score(hist)
 
+            if figure is None:
+                # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
+                figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
             # step 주기에 따른 loss 출력
             if (i + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
@@ -185,6 +198,7 @@ def train(model_dir, args):
                 # wandb log
                 if args.wandb == True:
                     wandb.log({
+                        "Media/train predict images": figure,
                         "Train/Train loss": round(loss.item(), 4),
                         "Train/Train mIoU": round(mIoU.item(), 4),
                         "Train/Train acc": round(acc.item(), 4),
@@ -204,9 +218,9 @@ def train(model_dir, args):
             figure = None
 
             hist = np.zeros((n_classes, n_classes))
-            for images, masks, _ in val_loader:
-                images = torch.stack(images)
-                masks = torch.stack(masks).long()
+            for images, masks in val_loader:
+                # images = torch.stack(images)
+                masks = masks.long()
 
                 # gpu device 할당
                 images, masks = images.to(device), masks.to(device)

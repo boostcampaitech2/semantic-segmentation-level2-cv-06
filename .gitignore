@@ -30,3 +30,6 @@ weights/
 
 # system
 .ipynb_*/
+
+#result
+*.out
