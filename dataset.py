@@ -75,7 +75,7 @@ class CustomDataLoader(Dataset):
             if self.transform is not None:
                 transformed = self.transform(image=images)
                 images = transformed["image"]
-            return images
+            return images, image_infos
         else:
             raise RuntimeError("CustomDataLoader mode error")
     
@@ -139,5 +139,5 @@ val_transform = A.Compose([
 ])
 
 test_transform = A.Compose([
-    # ToTensorV2()
+    ToTensorV2()
 ])

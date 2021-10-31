@@ -33,3 +33,5 @@ weights/
 
 #result
 *.out
+
+example.ipynb
