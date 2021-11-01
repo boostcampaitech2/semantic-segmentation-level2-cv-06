@@ -83,8 +83,9 @@ def train(model_dir, args):
         #override
         custom = transform_custom(args.seed, p = 0.3)
         train_transform = custom.transform_img
+        val_transform = custom.val_transform_img
     else:
-        from dataset import train_transform
+        from dataset import train_transform, val_transform
 
     # dataset
     train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
@@ -130,7 +131,11 @@ def train(model_dir, args):
         )
 
     # 여러 옵티마이저 가능하게 수정 필요
-    optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
+    # optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+    
+    #scheduler option
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, [20]) if args.schedule else None
 
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
@@ -168,6 +173,10 @@ def train(model_dir, args):
                 loss = 0.4 * aux_loss + main_loss
                 loss = loss.mean()
                 outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+
+            elif args.model in ('TransUnet'):
+                loss = model.get_loss(outputs, masks)
+                outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
             else:
                 loss = criterion(outputs, masks)
                 outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
@@ -175,6 +184,9 @@ def train(model_dir, args):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            #test
+            if scheduler:
+                scheduler.step(epoch)
 
             # 데이터 검증
             masks = masks.detach().cpu().numpy()
@@ -233,6 +245,10 @@ def train(model_dir, args):
                     loss = 0.4 * aux_loss + main_loss
                     loss = loss.mean()
                     outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+                    
+                elif args.model in ('TransUnet'):
+                    loss = model.get_loss(outputs, masks)
+                    outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
                 else:
                     loss = criterion(outputs, masks)
                     outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
@@ -253,7 +269,6 @@ def train(model_dir, args):
             avg_loss = total_loss / cnt
             print(f"[Val] Average Loss : {round(avg_loss.item(), 4)}, Accuracy : {round(acc, 4)} || "
                   f"mIoU : {round(mIoU, 4)}, IoU by class : {IoU_by_class}")
-            
 
             # save best model
             if mIoU > best_val_mIoU:
@@ -299,6 +314,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
     parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
+    parser.add_argument('--schedule', default=False, help='option for scheduler function')
     
     # Container environment
     parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train.json'))
@@ -312,13 +328,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    # #test script for debugging. must not commit
-    # args.custom_trs = True
-    # args.criterion = 'dice'
-    # args.model = 'TransUnet'
-    # args.batch_size = 8
+    #test script for debugging. must not commit
+    args.custom_trs = True
+    args.model = 'TransUnet'
+    args.batch_size = 4
 
-    check_args(args)
+    # check_args(args)  #test null
     print(args)
 
     # wandb init

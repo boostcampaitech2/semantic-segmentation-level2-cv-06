@@ -6,6 +6,7 @@ import albumentations as A
 import random
 import albumentations.augmentations.transforms as trans
 
+
 #taken from: https://www.kaggle.com/bguberfain/elastic-transform-for-data-augmentation
 # Function to distort image
 def elastic_transform(image, mask, seed):
@@ -50,15 +51,16 @@ class transform_custom():
 
         self.elastic = elastic_transform
         self.transform = A.Compose([
-            # trans.Blur(p=0.5),
-            A.OneOf([
-                # trans.ColorJitter(p = 1),
-                A.augmentations.geometric.rotate.RandomRotate90(),
-                A.ShiftScaleRotate(rotate_limit=0, p=0.5, border_mode=cv2.BORDER_CONSTANT),
-                A.HorizontalFlip(p=0.5),
-                # A.VerticalFlip(p=0.5),  
-            ], p=0.5),
+            trans.Blur(p=0.5),
+            trans.ToGray(p = 0.5),
+            A.ShiftScaleRotate(rotate_limit=15, p=0.5, border_mode=cv2.BORDER_CONSTANT),
+            A.HorizontalFlip(p = 0.5),
             # trans.GridDropout(p=0.5, random_offset=True, unit_size_min = 2, unit_size_max=20, mask_fill_value = 0),  
+            A.Normalize(),
+            A.pytorch.ToTensorV2()
+        ])
+        self.val_transform = A.Compose([
+            A.Normalize(),
             A.pytorch.ToTensorV2()
         ])
         self.p = p
@@ -69,8 +71,25 @@ class transform_custom():
         # if rand <= self.p:
         #     # option for custom transform 
         #     image, mask = self.elastic(image=image, mask=mask, seed=self.seed)
-        
+        image = cv2.resize(image, (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+        # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.int8)
 
         return self.transform(image=image, mask=mask)
 
 
+    def val_transform_img(self, image, mask):
+    # rand = random.random()
+    # if rand <= self.p:
+    #     # option for custom transform 
+    #     image, mask = self.elastic(image=image, mask=mask, seed=self.seed)
+        image = cv2.resize(image, (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+    # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.int8)
+
+        return self.val_transform(image=image, mask=mask)
+
+
+#testcode
+# import torch
+# import albumentations.pytorch
+# t = transform_custom(1024).transform_img(np.ones((512, 512, 3)), np.ones((512, 512)))
+# print('dum')

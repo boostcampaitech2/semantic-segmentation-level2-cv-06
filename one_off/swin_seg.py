@@ -1,18 +1,11 @@
-# coding=utf-8
-# from __future__ import absolute_import
-# from __future__ import division
-# from __future__ import print_function
-
 import copy
 import logging
 import math
 
 from os.path import join as pjoin
-from matplotlib.pyplot import sca
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 
 from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNorm
@@ -20,8 +13,7 @@ from torch.nn.modules.utils import _pair
 from scipy import ndimage
 from . import vit_seg_configs as configs
 from .vit_seg_modeling_resnet_skip import ResNetV2
-# import vit_seg_configs as configs
-# from vit_seg_modeling_resnet_skip import ResNetV2
+
 
 
 logger = logging.getLogger(__name__)
@@ -312,9 +304,8 @@ class DecoderBlock(nn.Module):
 
     def forward(self, x, skip=None):
         x = self.up(x)
+
         if skip is not None:
-            while skip.shape[-1] > x.shape[-1]:
-                x = self.up(x)
             x = torch.cat([x, skip], dim=1)
         x = self.conv1(x)
         x = self.conv2(x)
@@ -395,7 +386,7 @@ class VisionTransformer(nn.Module):
         x, attn_weights, features = self.transformer(x)  # (B, n_patch, hidden)
         x = self.decoder(x, features)
         logits = self.segmentation_head(x)
-        return F.interpolate(logits, mode = 'bilinear', scale_factor=0.5)
+        return logits
 
     def load_from(self, weights):
         with torch.no_grad():
@@ -454,7 +445,6 @@ CONFIGS = {
     'ViT-H_14': configs.get_h14_config(),
     'R50-ViT-B_16': configs.get_r50_b16_config(), #target
     'R50-ViT-L_16': configs.get_r50_l16_config(),   
-    'R50-ViT-L_32': configs.get_r50_l32_config(),   
     'testing': configs.get_testing(),
 }
 
@@ -462,13 +452,14 @@ def get_transunet(num_classes = 11, pretrained = True):
     config_vit = CONFIGS['R50-ViT-B_16']
     config_vit.n_classes = num_classes
     config_vit.n_skip = 3
-    config_vit.patches.grid = (int(1024 / 32), int(1024 / 32))
-    net = VisionTransformer(config_vit, img_size=1024, num_classes=config_vit.n_classes)
+    config_vit.patches.grid = (int(512 / 16), int(512 / 16))
+    net = VisionTransformer(config_vit, img_size=512, num_classes=config_vit.n_classes)
     if pretrained:
         net.load_from(weights=np.load(config_vit.pretrained_path))
     return net
     
 
 # model = get_transunet()
-# dumm = model(torch.zeros((8, 3, 1024, 1024)))
+# model.get_loss
+# dumm = model(torch.zeros((8, 3, 512, 512)))
 # print(dumm.shape)

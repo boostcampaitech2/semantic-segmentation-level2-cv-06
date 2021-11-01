@@ -10,6 +10,7 @@ from dataset import CustomDataLoader, collate_fn, test_transform
 from torch.utils.data import DataLoader
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from one_off.transform_test import transform_custom
 
 
 @torch.no_grad()
@@ -17,6 +18,13 @@ def inference(model_dir, args):
     print("Start prediction..")
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
+
+    if args.custom_trs:
+        #override
+        custom = transform_custom(args.seed, p = 0.3)
+        val_transform = custom.val_transform_img
+    else:
+        from dataset import train_transform, val_transform
 
     test_dataset = CustomDataLoader(data_dir=args.test_path, mode='test', transform=test_transform)
     test_loader = DataLoader(
