@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 import segmentation_models_pytorch as smp
+from ocrnet import HRNet, HRNet_Mscale
 
 
 class FCNRes50(nn.Module):
@@ -13,8 +14,7 @@ class FCNRes50(nn.Module):
         self.model.classifier[4] = nn.Conv2d(512, num_classes, kernel_size=1)
 
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class FCNRes101(nn.Module):
@@ -26,8 +26,7 @@ class FCNRes101(nn.Module):
         self.model.classifier[4] = nn.Conv2d(512, num_classes, kernel_size=1)
 
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class DeepLabV3_Res50(nn.Module):
@@ -39,8 +38,7 @@ class DeepLabV3_Res50(nn.Module):
         self.model.classifier[4] = nn.Conv2d(256, num_classes, kernel_size=1)
 
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class DeepLabV3_Res101(nn.Module):
@@ -52,8 +50,7 @@ class DeepLabV3_Res101(nn.Module):
         self.model.classifier[4] = nn.Conv2d(256, num_classes, kernel_size=1)
 
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class UNet(nn.Module):
@@ -67,8 +64,7 @@ class UNet(nn.Module):
             )
     
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class UNet_PlusPlus(nn.Module):
@@ -82,8 +78,7 @@ class UNet_PlusPlus(nn.Module):
             )
     
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class FPN(nn.Module):
@@ -97,8 +92,7 @@ class FPN(nn.Module):
             )
     
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class PSPNet(nn.Module):
@@ -112,8 +106,7 @@ class PSPNet(nn.Module):
             )
     
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class DeepLabV3(nn.Module):
@@ -127,8 +120,7 @@ class DeepLabV3(nn.Module):
             )
     
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
 
 
 class DeepLabV3_Plus(nn.Module):
@@ -142,5 +134,23 @@ class DeepLabV3_Plus(nn.Module):
             )
     
     def forward(self, x):
-        x = self.model(x)
-        return x
+        return self.model(x)
+
+
+class OCRNet(nn.Module):
+    def __init__(self, num_classes=11, pretrained=True):
+        super().__init__()
+        self.model = HRNet(num_classes=num_classes)
+    
+    def forward(self, x):
+        return self.model(x)
+
+
+class MscaleOCRNet(nn.Module):
+    def __init__(self, num_classes=11, pretrained=True):
+        super().__init__()
+        self.model = HRNet_Mscale(num_classes=num_classes)
+    
+    def forward(self, x):
+        return self.model(x)
+

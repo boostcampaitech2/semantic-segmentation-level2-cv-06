@@ -1,3 +1,9 @@
+# .ipybb checkpoints
+**/.ipynb_checkpoints/
+
+# pretrained model
+*.pth
+
 # Byte-compiled
 __pycache__/
 

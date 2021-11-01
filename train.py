@@ -126,15 +126,16 @@ def train(model_dir, args):
     category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                       'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
     best_val_mIoU = 0
-    step = 0
     for epoch in range(args.epochs):
         print(f'Start training..')
+        step = 0
 
         # train loop
         model.train()
         
         hist = np.zeros((n_classes, n_classes))
         for images, masks, _ in train_loader:
+
             images = torch.stack(images)
             masks = torch.stack(masks).long()
             
@@ -149,13 +150,20 @@ def train(model_dir, args):
                 outputs = model(images)
 
             # calculate loss
-            loss = criterion(outputs, masks)
+            if args.model in ('OCRNet', 'MscaleOCRNet'):
+                aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
+                main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                loss = 0.4 * aux_loss + main_loss
+                outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+            else:
+                loss = criterion(outputs, masks)
+                outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             # 데이터 검증
-            outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
             masks = masks.detach().cpu().numpy()
 
             hist = add_hist(hist, masks, outputs, n_class=n_classes)
@@ -175,9 +183,10 @@ def train(model_dir, args):
                         "Train/Train loss": round(loss.item(), 4),
                         "Train/Train mIoU": round(mIoU.item(), 4),
                         "Train/Train acc": round(acc.item(), 4),
-                        "learning_rate": current_lr
+                        "learning_rate": current_lr,
+                        "epoch":epoch+1
                         },
-                        step=step)
+                        step = step + epoch * int(2616 / args.batch_size))
 
             step += 1
 
@@ -206,11 +215,18 @@ def train(model_dir, args):
                     outputs = model(images)
 
                 # calculate loss
-                loss = criterion(outputs, masks)
+                if args.model in ('OCRNet', 'MscaleOCRNet'):
+                    aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
+                    main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                    loss = 0.4 * aux_loss + main_loss
+                    outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+                else:
+                    loss = criterion(outputs, masks)
+                    outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
+
                 total_loss += loss
                 cnt += 1
 
-                outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
                 masks = masks.detach().cpu().numpy()
                 
                 hist = add_hist(hist, masks, outputs, n_class=n_classes)
@@ -246,10 +262,10 @@ def train(model_dir, args):
                     "Metric/Background_IoU": IoU_by_class[0]['Background'], "Metric/General_trash_IoU": IoU_by_class[1]['General trash'], "Metric/Paper_IoU": IoU_by_class[2]['Paper'],
                     "Metric/Paper_pack_IoU": IoU_by_class[3]['Paper pack'], "Metric/Metal_IoU": IoU_by_class[4]['Metal'], "Metric/Glass_IoU": IoU_by_class[5]['Glass'],
                     "Metric/Plastic_IoU": IoU_by_class[6]['Plastic'], "Metric/Styrofoam_IoU": IoU_by_class[7]['Styrofoam'], "Metric/Plastic_bag_IoU": IoU_by_class[8]['Plastic bag'],
-                    "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing']
+                    "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing'],
+                    "epoch":epoch+1
                     },
-                    step=step)
-            print()
+                    step = step + epoch * int(2616 / args.batch_size))
 
 
 if __name__ == '__main__':
