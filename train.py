@@ -81,7 +81,7 @@ def train(model_dir, args):
     # transform selector
     if args.custom_trs:
         #override
-        custom = transform_custom(args.seed, p = 0.3)
+        custom = transform_custom(args.seed, p = 0.3, scale = 2)
         train_transform = custom.transform_img
         val_transform = custom.val_transform_img
     else:
@@ -329,9 +329,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     #test script for debugging. must not commit
-    args.custom_trs = True
-    args.model = 'TransUnet'
-    args.batch_size = 4
+    # args.custom_trs = True
+    # args.model = 'TransUnet'
+    # args.batch_size = 4
+    # args.schedule = True
+    # args.lr = 0.001
+    # args.finetune = True
 
     # check_args(args)  #test null
     print(args)

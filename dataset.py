@@ -90,7 +90,6 @@ train_transform = A.Compose([
 ])
 
 val_transform = A.Compose([
-    A.Normalize(),
     ToTensorV2()
 ])
 

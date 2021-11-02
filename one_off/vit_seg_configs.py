@@ -140,7 +140,7 @@ def get_r50_l32_config():
     config.resnet.width_factor = 1
 
     config.classifier = 'seg'
-    config.pretrained_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/models/weights/imagenet21k_R50+ViT-L_32.npz'
+    config.pretrained_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/models/weights/imagenet21k+imagenet2012_R50+ViT-B_16.npz'
     config.decoder_channels = (256, 128, 64, 16)
     config.skip_channels = [512, 256, 64, 16]
     config.n_classes = 11

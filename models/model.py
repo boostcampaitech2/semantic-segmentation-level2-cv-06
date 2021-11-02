@@ -13,7 +13,9 @@ class TransUnet(nn.Module):
     def __init__(self, num_classes=11, pretrained=True):
         super().__init__()
         self.backbone = get_transunet(num_classes=num_classes, pretrained = pretrained)
-        self.ce_loss = CrossEntropyLoss()
+        self.ce_loss = CrossEntropyLoss(
+            weight = torch.tensor()
+            )
         self.dice_loss = DiceLoss(num_classes)
         # self.smoothloss = LabelSmoothingLoss()
     
@@ -24,7 +26,6 @@ class TransUnet(nn.Module):
         loss_ce = self.ce_loss(pred, mask.long())
         loss_dice = self.dice_loss(pred, mask.long(), softmax=True)
         loss = 0.5 * loss_ce + 0.5 * loss_dice
-        # self.smoothloss.forward(pred, mask)
         return loss
 
 

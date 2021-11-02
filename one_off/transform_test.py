@@ -46,9 +46,10 @@ def elastic_transform(image, mask, seed):
 
 
 class transform_custom():
-    def __init__(self, seed, p=0.1):
+    def __init__(self, seed, p=0.1, scale = None):
         assert 0<=p<=1
 
+        self.scale = scale if scale else 1
         self.elastic = elastic_transform
         self.transform = A.Compose([
             trans.Blur(p=0.5),
@@ -59,7 +60,7 @@ class transform_custom():
             A.Normalize(),
             A.pytorch.ToTensorV2()
         ])
-        self.val_transform = A.Compose([
+        self.norm_totensor = A.Compose([
             A.Normalize(),
             A.pytorch.ToTensorV2()
         ])
@@ -70,22 +71,28 @@ class transform_custom():
         # rand = random.random()
         # if rand <= self.p:
         #     # option for custom transform 
-        #     image, mask = self.elastic(image=image, mask=mask, seed=self.seed)
-        image = cv2.resize(image, (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
-        # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.int8)
+        #     image, mask = self.elastic(image=image, mask=mask, seed=self.seed) #cv2.INTER_LANCZOS4
+        image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+        # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LINEAR).astype(np.int8)
 
         return self.transform(image=image, mask=mask)
 
 
     def val_transform_img(self, image, mask):
+        image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+        # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LINEAR).astype(np.int8)
+
+        return self.norm_totensor(image=image, mask=mask)
+
+    def test_transform_img(self, image):
     # rand = random.random()
     # if rand <= self.p:
     #     # option for custom transform 
     #     image, mask = self.elastic(image=image, mask=mask, seed=self.seed)
-        image = cv2.resize(image, (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+        image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LINEAR).astype(np.float32)
     # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.int8)
 
-        return self.val_transform(image=image, mask=mask)
+        return self.norm_totensor(image=image)
 
 
 #testcode
