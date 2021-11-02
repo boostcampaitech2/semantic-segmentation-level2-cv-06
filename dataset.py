@@ -95,14 +95,15 @@ def make_final_mask(data):
     masks = data['masks']
     # print('image shape!!!', image.shape)
 
-    category = [c[-2] for c in bboxes]
-
+    category = np.array([b[-2] for b in bboxes])
+    # print('category:', category)
     final_masks = np.zeros((512, 512))
     pmasks = [[m, c] for m, c in zip(masks, category)]
     pmasks = sorted(pmasks, key= lambda x: len(x[0]), reverse=True)
 
     for i in range(len(pmasks)):
         final_masks[pmasks[i][0]==1] = pmasks[i][1]
+        # print('category:',i, pmasks[i][1])
     final_masks = final_masks.astype(np.int8)
     final_masks = torch.tensor(final_masks)
     return image, final_masks
@@ -111,8 +112,9 @@ def make_final_mask(data):
 def train_collate_fn(batch):
     new_batch = [[], []]
     for i in batch:
-        new_batch[0].append(make_final_mask(i)[0])
-        new_batch[1].append(make_final_mask(i)[1])
+        data = make_final_mask(i)
+        new_batch[0].append(data[0])
+        new_batch[1].append(data[1])
     # print(new_batch)
     # print('one len', len(new_batch[0]))
     # print('type:', type(new_batch[0]))

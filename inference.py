@@ -56,7 +56,7 @@ def inference(model_dir, args):
 
             # inference (512 x 512)
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
-                outs = model(torch.stack(imgs).to(device))['out']
+                outs = model(torch.  (imgs).to(device))['out']
             else:
                 outs = model(torch.stack(imgs).to(device))
             oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
