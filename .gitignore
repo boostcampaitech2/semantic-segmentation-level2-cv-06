@@ -22,3 +22,12 @@ wandb/
 
 # input 심볼릭 링크로 현재 디렉토리에 불러와서 사용
 input
+
+*.out
+
+example.ipynb
+
+runs/
+
+personal/
+
