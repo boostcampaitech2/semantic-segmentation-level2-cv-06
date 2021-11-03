@@ -2,7 +2,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import models.hrnetv2 as hrnetv2
+import models.HRNET_OCR.hrnetv2 as hrnetv2
 
 
 ALIGN_CORNERS = False
