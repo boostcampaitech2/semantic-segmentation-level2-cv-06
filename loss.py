@@ -8,6 +8,9 @@ _CLIP_MIN = 1e-6 # min clip value after softmax or sigmoid operations
 _POS_ALPHA = 5e-4 # add this factor to ensure the AA^T is positive definite
 _IS_SUM = 1 # sum the loss per channel
 
+NUM_OUTPUTS = 1
+ALIGN_CORNERS = True
+BALANCE_WEIGHTS = [1]
 
 class RMILoss(nn.Module):
     """
@@ -214,10 +217,82 @@ class FocalLoss(nn.Module):
         )
 
 
+class OhemCrossEntropy(nn.Module):
+    def __init__(self, ignore_label=-1, thres=0.7,
+                 min_kept=100000, weight=torch.FloatTensor([1.0,
+                                                            2.2438960966453663,
+                                                            1.0367368849500223,
+                                                            3.684620397193553,
+                                                            3.844600329110712,
+                                                            3.7614326467956447,
+                                                            2.138889000323256,
+                                                            2.972463646614637,
+                                                            1.2325602611778486,
+                                                            6.039683119378457,
+                                                            5.002939087461785]).cuda()):    # Clothing
+        super(OhemCrossEntropy, self).__init__()
+        self.thresh = thres
+        self.min_kept = max(1, min_kept)
+        self.ignore_label = ignore_label
+        self.criterion = nn.CrossEntropyLoss(
+            weight=weight,
+            ignore_index=ignore_label,
+            reduction='none'
+        )
+
+    def _ce_forward(self, score, target):
+        ph, pw = score.size(2), score.size(3)
+        h, w = target.size(1), target.size(2)
+        if ph != h or pw != w:
+            score = F.interpolate(input=score, size=(
+                h, w), mode='bilinear', align_corners=ALIGN_CORNERS)
+
+        loss = self.criterion(score, target)
+
+        return loss
+
+    def _ohem_forward(self, score, target, **kwargs):
+        ph, pw = score.size(2), score.size(3)
+        h, w = target.size(1), target.size(2)
+        if ph != h or pw != w:
+            score = F.interpolate(input=score, size=(
+                h, w), mode='bilinear', align_corners=ALIGN_CORNERS)
+        pred = F.softmax(score, dim=1)
+        pixel_losses = self.criterion(score, target).contiguous().view(-1)
+        mask = target.contiguous().view(-1) != self.ignore_label
+
+        tmp_target = target.clone()
+        tmp_target[tmp_target == self.ignore_label] = 0
+        pred = pred.gather(1, tmp_target.unsqueeze(1))
+        pred, ind = pred.contiguous().view(-1,)[mask].contiguous().sort()
+        min_value = pred[min(self.min_kept, pred.numel() - 1)]
+        threshold = max(min_value, self.thresh)
+
+        pixel_losses = pixel_losses[mask][ind]
+        pixel_losses = pixel_losses[pred < threshold]
+        return pixel_losses.mean()
+
+    def forward(self, score, target):
+
+        if NUM_OUTPUTS == 1:
+            score = [score]
+
+        weights = BALANCE_WEIGHTS
+        assert len(weights) == len(score)
+
+        functions = [self._ce_forward] * \
+            (len(weights) - 1) + [self._ohem_forward]
+        return sum([
+            w * func(x, target)
+            for (w, x, func) in zip(weights, score, functions)
+        ])
+
+
 _criterion_entropoints = {
     'cross_entropy': nn.CrossEntropyLoss,
     'focal': FocalLoss,
-    'rmi': RMILoss
+    'rmi': RMILoss,
+    'ohem_cross_entropy' : OhemCrossEntropy
 }
 
 

@@ -151,8 +151,13 @@ def train(model_dir, args):
 
             # calculate loss
             if args.model in ('OCRNet', 'MscaleOCRNet'):
-                aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
-                main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                if args.criterion == 'ohem_cross_entropy':
+                    aux_loss = criterion(outputs['aux'], masks)
+                    main_loss = criterion(outputs['pred'], masks)
+                else:
+                    aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
+                    main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+
                 loss = 0.4 * aux_loss + main_loss
                 outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
             else:
@@ -216,8 +221,12 @@ def train(model_dir, args):
 
                 # calculate loss
                 if args.model in ('OCRNet', 'MscaleOCRNet'):
-                    aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
-                    main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                    # aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
+                    # main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+
+                    aux_loss = criterion(outputs['aux'], masks)
+                    main_loss = criterion(outputs['pred'], masks)
+                    
                     loss = 0.4 * aux_loss + main_loss
                     outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
                 else:

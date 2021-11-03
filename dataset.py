@@ -296,10 +296,16 @@ class RandomAugMix(ImageOnlyTransform):
         )
         return image
 
-
+# 0.52 -> 0.58
 train_transform = A.Compose([
-    RandomAugMix(severity=3, width=3, alpha=1., p=1),
-    ToTensorV2()
+    RandomAugMix(severity=3, width=14, alpha=1,p=1),
+    
+    A.RandomCrop(width=256, height=256),
+    A.HorizontalFlip(),
+    A.ColorJitter(),
+    # A.RandomScale([0.5,2.0]),
+    
+    ToTensorV2(),
 ])
 
 val_transform = A.Compose([
