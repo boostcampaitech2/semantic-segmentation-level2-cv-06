@@ -50,7 +50,8 @@ def add_hist(hist, label_trues, label_preds, n_class):
 
 def grid_image(images, masks, preds, n=4, shuffle=False):
     batch_size = masks.shape[0]
-    assert n <= batch_size
+    if n > batch_size:
+        n = batch_size
 
     choices = random.choices(range(batch_size), k=n) if shuffle else list(range(n))
     figure = plt.figure(figsize=(12, 16))   # cautions: hardcoded, 이미지 크기에 따라 figsize 를 조정해야 할 수 있습니다.
@@ -149,5 +150,12 @@ def remove_dot_underbar(root):
 #     freq = hist.sum(axis=1) / hist.sum()
 #     fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
 #     return acc, acc_cls, mean_iu, fwavacc, iu
+
+
+def is_battery(mask):
+    if 9 in mask:
+        return True
+    else:
+        return False
 
 

@@ -9,10 +9,6 @@ from models.ocrnet_utils import fmt_scale
 INIT_DECODER = False
 MID_CHANNELS = 512
 KEY_CHANNELS = 256
-NUM_CLASSES = 11
-
-OCR_ALPHA = 0.4
-OCR_AUX_RMI = False
 
 MSCALE_LO_SCALE = 0.5
 N_SCALES = [0.5, 1.0, 2.0]
@@ -23,12 +19,12 @@ class OCR_block(nn.Module):
     Some of the code in this class is borrowed from:
     https://github.com/HRNet/HRNet-Semantic-Segmentation/tree/HRNet-OCR
     """
-    def __init__(self, high_level_ch):
+    def __init__(self, high_level_ch, num_classes):
         super(OCR_block, self).__init__()
 
         ocr_mid_channels = MID_CHANNELS
         ocr_key_channels = KEY_CHANNELS
-        num_classes = NUM_CLASSES
+        num_classes = num_classes
 
         self.conv3x3_ocr = nn.Sequential(
             nn.Conv2d(high_level_ch, ocr_mid_channels,
@@ -99,7 +95,7 @@ class MscaleOCR(nn.Module):
     def __init__(self, num_classes, trunk='hrnetv2'):
         super(MscaleOCR, self).__init__()
         self.backbone, _, _, high_level_ch = get_trunk(trunk)
-        self.ocr = OCR_block(high_level_ch)
+        self.ocr = OCR_block(high_level_ch, num_classes)
         self.scale_attn = make_attn_head(
             in_ch=MID_CHANNELS, out_ch=1)
 

@@ -6,6 +6,7 @@ import re
 import random
 from pathlib import Path
 from importlib import import_module
+from cv2 import transform
 
 import numpy as np
 import torch
@@ -16,6 +17,9 @@ import wandb
 from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
 from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
+#tmp import for testing
+from one_off.transform_test import transform_custom
+from tqdm import tqdm
 
 
 def seed_everything(seed):
@@ -74,10 +78,20 @@ def train(model_dir, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
+    # transform selector
+    if args.custom_trs:
+        #override
+        custom = transform_custom(args.seed, p = 0.3, scale = 2)
+        train_transform = custom.transform_img
+        val_transform = custom.val_transform_img
+    else:
+        from dataset import train_transform, val_transform
+
     # dataset
     train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
-    
+
+
     # data_loader
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -117,7 +131,11 @@ def train(model_dir, args):
         )
 
     # 여러 옵티마이저 가능하게 수정 필요
-    optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
+    # optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+    
+    #scheduler option
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, [30]) if args.schedule else None
 
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
@@ -137,11 +155,11 @@ def train(model_dir, args):
         for i, (images, masks, _) in enumerate(train_loader):
             images = torch.stack(images)
             masks = torch.stack(masks).long()
-            
+
             # gpu device 할당
             images, masks = images.to(device), masks.to(device)
             model = model.to(device)
-
+            
             # inference
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                 outputs = model(images)['out']
@@ -155,6 +173,10 @@ def train(model_dir, args):
                 loss = 0.4 * aux_loss + main_loss
                 loss = loss.mean()
                 outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+
+            elif args.model in ('TransUnet'):
+                loss = model.get_loss(outputs, masks)
+                outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
             else:
                 loss = criterion(outputs, masks)
                 outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
@@ -162,6 +184,9 @@ def train(model_dir, args):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            #test
+            if scheduler:
+                scheduler.step(epoch)
 
             # 데이터 검증
             masks = masks.detach().cpu().numpy()
@@ -193,13 +218,13 @@ def train(model_dir, args):
         with torch.no_grad():
             print("Calculating validation results...")
             model.eval()
-            
+
             total_loss = 0
             cnt = 0
             figure = None
 
             hist = np.zeros((n_classes, n_classes))
-            for images, masks, _ in val_loader:
+            for images, masks, _ in tqdm(val_loader, leave=False):
                 images = torch.stack(images)
                 masks = torch.stack(masks).long()
 
@@ -220,6 +245,10 @@ def train(model_dir, args):
                     loss = 0.4 * aux_loss + main_loss
                     loss = loss.mean()
                     outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+                    
+                elif args.model in ('TransUnet'):
+                    loss = model.get_loss(outputs, masks)
+                    outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
                 else:
                     loss = criterion(outputs, masks)
                     outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
@@ -240,7 +269,6 @@ def train(model_dir, args):
             avg_loss = total_loss / cnt
             print(f"[Val] Average Loss : {round(avg_loss.item(), 4)}, Accuracy : {round(acc, 4)} || "
                   f"mIoU : {round(mIoU, 4)}, IoU by class : {IoU_by_class}")
-            
 
             # save best model
             if mIoU > best_val_mIoU:
@@ -267,6 +295,10 @@ def train(model_dir, args):
                     step=step)
             print()
 
+def check_args(args):
+    if (args.model in ('OCRNet', 'MscaleOCRNet')) ^ (args.criterion in ('rmi', 'smooth', 'dice')):
+        raise Exception(f"not match error model and criterion. {args.model}, {args.criterion}")
+    return True
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -281,9 +313,11 @@ if __name__ == '__main__':
     parser.add_argument('--criterion', type=str, default='cross_entropy', help='criterion type (default: cross_entropy)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
+    parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
+    parser.add_argument('--schedule', default=False, help='option for scheduler function')
     
     # Container environment
-    parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train.json'))
+    parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train_all.json'))
     parser.add_argument('--val_path', type=str, default=os.environ.get('SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './runs'))
 
@@ -293,6 +327,15 @@ if __name__ == '__main__':
     parser.add_argument('--project', type=str, default='test', help='wandb project name (default: test)')
 
     args = parser.parse_args()
+    
+    #test script for debugging. must not commit
+    # args.custom_trs = True
+    # args.model = 'TransUnet'
+    # args.batch_size = 4
+    # args.schedule = True
+    # args.lr = 0.001
+
+    # check_args(args)  #test null
     print(args)
 
     # wandb init
