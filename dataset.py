@@ -95,7 +95,7 @@ class CustomDataLoader(Dataset):
                 transformed = self.transform(image=images, mask=masks)
                 images = transformed["image"]
                 masks = transformed["mask"]
-            
+            images /= 255.
             return images, masks, image_infos
         
         if self.mode == 'test':
@@ -103,7 +103,7 @@ class CustomDataLoader(Dataset):
             if self.transform is not None:
                 transformed = self.transform(image=images)
                 images = transformed["image"]
-            
+            images /= 255.
             return images, image_infos
     
     

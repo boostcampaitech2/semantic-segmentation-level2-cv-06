@@ -189,7 +189,7 @@ def train(model_dir, args):
                 # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
                 figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
 
-            # step 주기에 따른 loss 출력
+            # step 주기에 따른 loss 출F력
             if (step + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
                 print(
