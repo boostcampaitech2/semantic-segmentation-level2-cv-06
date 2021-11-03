@@ -148,6 +148,7 @@ def train(model_dir, args):
 
         # train loop
         model.train()
+        figure = None
         
         hist = np.zeros((n_classes, n_classes))
         for images, masks, _ in train_loader:
@@ -184,6 +185,9 @@ def train(model_dir, args):
 
             hist = add_hist(hist, masks, outputs, n_class=n_classes)
             acc, acc_cls, mIoU, fwavacc, IoU = label_accuracy_score(hist)
+            if figure is None:
+                # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
+                figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
 
             # step 주기에 따른 loss 출력
             if (step + 1) % args.log_interval == 0:
@@ -196,6 +200,7 @@ def train(model_dir, args):
                 # wandb log
                 if args.wandb == True:
                     wandb.log({
+                        "Media/train predict images": figure,
                         "Train/Train loss": round(loss.item(), 4),
                         "Train/Train mIoU": round(mIoU.item(), 4),
                         "Train/Train acc": round(acc.item(), 4),
