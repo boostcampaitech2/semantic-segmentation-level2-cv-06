@@ -6,7 +6,7 @@ from tqdm import tqdm
 from importlib import import_module
 
 import torch
-from dataset import CustomDataLoader, test_collate_fn, test_transform
+from dataset import CustomDataLoader, collate_fn, test_transform
 from torch.utils.data import DataLoader
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -25,10 +25,10 @@ def inference(model_dir, args):
         num_workers=4,
         shuffle=False,
         pin_memory=use_cuda,
-        collate_fn=test_collate_fn
+        collate_fn=collate_fn
     )
 
-    model_module = getattr(import_module("models.model"), args.model)
+    model_module = getattr(import_module("model"), args.model)
     model = model_module(
         num_classes=11, pretrained=True
     )
