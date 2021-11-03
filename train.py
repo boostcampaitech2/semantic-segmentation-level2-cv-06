@@ -14,11 +14,13 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import wandb
 
-from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
+from dataset import CustomDataLoader, train_transform, val_transform, cp_collate_fn, collate_fn
+from coco import CocoDetectionCP
+
 from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 #tmp import for testing
-from one_off.transform_test import transform_custom
+from one_off.transform_test import transform_custom, create_transforms
 from tqdm import tqdm
 
 
@@ -81,25 +83,30 @@ def train(model_dir, args):
     # transform selector
     if args.custom_trs:
         #override
-        custom = transform_custom(args.seed, p = 0.3, scale = 2)
+        custom = transform_custom(args.seed)
         train_transform = custom.transform_img
         val_transform = custom.val_transform_img
+
+        criterion = create_transforms(args.custom_trs)
     else:
-        from dataset import train_transform, val_transform
+        from datasets.dataset import train_transform, val_transform
 
     # dataset
-    train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
+    cp_train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
+    '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train.json', # annfile
+    train_transform)
+
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
 
 
     # data_loader
-    train_loader = DataLoader(
-        dataset=train_dataset,
+    cp_train_loader = DataLoader(
+        dataset=cp_train_dataset,
         batch_size=args.batch_size,
         num_workers=args.workers,
         shuffle=True,
         pin_memory=use_cuda,
-        collate_fn=collate_fn,
+        collate_fn=cp_collate_fn,
         drop_last=True
     )
 
@@ -152,7 +159,9 @@ def train(model_dir, args):
         model.train()
         
         hist = np.zeros((n_classes, n_classes))
-        for i, (images, masks, _) in enumerate(train_loader):
+        figure = None
+
+        for i, (images, masks) in enumerate(cp_train_loader):
             images = torch.stack(images)
             masks = torch.stack(masks).long()
 
@@ -194,17 +203,21 @@ def train(model_dir, args):
             hist = add_hist(hist, masks, outputs, n_class=n_classes)
             acc, acc_cls, mIoU, fwavacc, IoU = label_accuracy_score(hist)
 
+            if figure is None:
+                # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
+                figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
             # step 주기에 따른 loss 출력
             if (i + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
                 print(
-                    f"Epoch[{epoch+1}/{args.epochs}] Step [{i+1}/{len(train_loader)}] || "
+                    f"Epoch[{epoch+1}/{args.epochs}] Step [{i+1}/{len(cp_train_loader)}] || "
                     f"training loss {round(loss.item(),4)} || mIoU {round(mIoU,4)} || lr {current_lr}"
                 )
 
                 # wandb log
                 if args.wandb == True:
                     wandb.log({
+                        "Media/train predict images": figure,
                         "Train/Train loss": round(loss.item(), 4),
                         "Train/Train mIoU": round(mIoU.item(), 4),
                         "Train/Train acc": round(acc.item(), 4),

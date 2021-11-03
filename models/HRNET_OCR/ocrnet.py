@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 
-from models.ocrnet_utils import initialize_weights, Upsample, scale_as, ResizeX
-from models.ocrnet_utils import get_trunk, BNReLU, make_attn_head
-from models.ocrnet_utils import SpatialGather_Module, SpatialOCR_Module
-from models.ocrnet_utils import fmt_scale
+from models.HRNET_OCR.ocrnet_utils import initialize_weights, Upsample, scale_as, ResizeX
+from models.HRNET_OCR.ocrnet_utils import get_trunk, BNReLU, make_attn_head
+from models.HRNET_OCR.ocrnet_utils import SpatialGather_Module, SpatialOCR_Module
+from models.HRNET_OCR.ocrnet_utils import fmt_scale
 
 INIT_DECODER = False
 MID_CHANNELS = 512
