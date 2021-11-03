@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from transform_test import RandomAugMix
+from datasets.transform_test import RandomAugMix
 
 # copy paste 
 from copy_paste import CopyPaste
