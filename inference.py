@@ -65,10 +65,15 @@ def inference(model_dir, args):
             # inference (512 x 512)
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                 outs = model(torch.stack(imgs).to(device))['out']
+                oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
+            elif args.model in ('MscaleOCRNet'):
+                outs = model(torch.stack(imgs).to(device))
+                oms = torch.argmax(outs['pred'].squeeze(), dim=1).detach().cpu().numpy()
             else:
                 outs = model(torch.stack(imgs).to(device))
-            oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
-
+                oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
+            
+            
             # resize (256 x 256)
             temp_mask = []
             for img, mask in zip(np.stack(imgs), oms):
