@@ -35,3 +35,8 @@ weights/
 *.out
 
 example.ipynb
+
+*.ipynb
+
+*.pickle
+

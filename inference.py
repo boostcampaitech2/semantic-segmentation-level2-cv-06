@@ -6,7 +6,7 @@ from tqdm import tqdm
 from importlib import import_module
 
 import torch
-from dataset import CustomDataLoader, train_transform, val_transform, test_transform, train_collate_fn, test_collate_fn
+from dataset import CustomDataLoader, test_collate_fn, test_transform
 from torch.utils.data import DataLoader
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -47,20 +47,21 @@ def inference(model_dir, args):
     file_name_list = []
     preds_array = np.empty((0, size*size), dtype=np.compat.long)
 
-    # batch = next(iter(test_loader))
-    # print(batch)
-    # print(len(batch))
-
     with torch.no_grad():
         for step, (imgs, image_infos) in enumerate(tqdm(test_loader)):
 
             # inference (512 x 512)
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
-                outs = model(torch.  (imgs).to(device))['out']
+                outs = model(torch.stack(imgs).to(device))['out']
+                oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
+            elif args.model in ('MscaleOCRNet'):
+                outs = model(torch.stack(imgs).to(device))
+                oms = torch.argmax(outs['pred'].squeeze(), dim=1).detach().cpu().numpy()
             else:
                 outs = model(torch.stack(imgs).to(device))
-            oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
-
+                oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
+            
+            
             # resize (256 x 256)
             temp_mask = []
             for img, mask in zip(np.stack(imgs), oms):
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
 
     # load sample_submission.csv
-    submission = pd.read_csv('../baseline_code/submission/sample_submission.csv', index_col=None)
+    submission = pd.read_csv('/opt/ml/segmentation/baseline_code/submission/sample_submission.csv', index_col=None)
 
     # prediction using test set
     file_names, preds = inference(model_dir, args)
