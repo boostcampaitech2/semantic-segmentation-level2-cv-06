@@ -119,7 +119,6 @@ def collate_fn(batch):
 #     ToTensorV2()
 # ])
 train_transform = A.Compose([
-    RandomAugMix(severity=3, width=14, alpha=1., p=1),
     ToTensorV2()
 ])
 
