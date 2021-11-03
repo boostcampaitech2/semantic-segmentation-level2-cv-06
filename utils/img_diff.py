@@ -1,13 +1,11 @@
 import os
-import random
-import time
 import json
 import warnings 
 warnings.filterwarnings('ignore')
 
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import cv2
 
 import numpy as np
@@ -17,16 +15,12 @@ from tqdm import tqdm
 # 전처리를 위한 라이브러리
 from pycocotools.coco import COCO
 import torch
-import torchvision
-import torchvision.transforms as transforms
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 # 시각화를 위한 라이브러리
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
-from matplotlib.patches import Patch
-import webcolors
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
