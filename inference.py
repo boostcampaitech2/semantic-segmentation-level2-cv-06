@@ -6,11 +6,10 @@ from tqdm import tqdm
 from importlib import import_module
 
 import torch
-from dataset import CustomDataLoader, collate_fn, test_transform
+from datasets.dataset import CustomDataLoader, collate_fn
 from torch.utils.data import DataLoader
 import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from one_off.transform_test import transform_custom
+from datasets.transform_test import transform_custom
 from one_off import tta
 
 
@@ -25,7 +24,7 @@ def inference(model_dir, args):
         custom = transform_custom(args.seed, p = 0.3)
         test_transform = custom.test_transform_img
     else:
-        from dataset import test_transform
+        from datasets.dataset import test_transform
 
     test_dataset = CustomDataLoader(data_dir=args.test_path, mode='test', transform=test_transform)
     test_loader = DataLoader(
@@ -65,10 +64,15 @@ def inference(model_dir, args):
             # inference (512 x 512)
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                 outs = model(torch.stack(imgs).to(device))['out']
+                oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
+            elif args.model in ('MscaleOCRNet'):
+                outs = model(torch.stack(imgs).to(device))
+                oms = torch.argmax(outs['pred'].squeeze(), dim=1).detach().cpu().numpy()
             else:
                 outs = model(torch.stack(imgs).to(device))
-            oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
-
+                oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
+            
+            
             # resize (256 x 256)
             temp_mask = []
             for img, mask in zip(np.stack(imgs), oms):
