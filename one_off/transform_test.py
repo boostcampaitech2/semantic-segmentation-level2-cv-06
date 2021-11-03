@@ -7,6 +7,7 @@ import random
 import albumentations.augmentations.transforms as trans
 
 
+
 #taken from: https://www.kaggle.com/bguberfain/elastic-transform-for-data-augmentation
 # Function to distort image
 def elastic_transform(image, mask, seed):
@@ -45,18 +46,18 @@ def elastic_transform(image, mask, seed):
     return im_merge_t, mask
 
 
-class transform_custom():
-    def __init__(self, seed, p=0.1, scale = None):
+class transform_transunet():
+    def __init__(self, seed, p=0.5, scale = None):
+
         assert 0<=p<=1
 
         self.scale = scale if scale else 1
         self.elastic = elastic_transform
         self.transform = A.Compose([
-            trans.Blur(p=0.5),
-            trans.ToGray(p = 0.5),
-            A.ShiftScaleRotate(rotate_limit=15, p=0.5, border_mode=cv2.BORDER_CONSTANT),
-            A.HorizontalFlip(p = 0.5),
-            # trans.GridDropout(p=0.5, random_offset=True, unit_size_min = 2, unit_size_max=20, mask_fill_value = 0),  
+            trans.Blur(p=p),
+            trans.ToGray(p = p),
+            A.ShiftScaleRotate(rotate_limit=15, p=p, border_mode=cv2.BORDER_CONSTANT),
+            A.HorizontalFlip(p = p),
             A.Normalize(),
             A.pytorch.ToTensorV2()
         ])
@@ -68,32 +69,40 @@ class transform_custom():
         self.seed = seed
     
     def transform_img(self, image, mask):
-        # rand = random.random()
-        # if rand <= self.p:
-        #     # option for custom transform 
-        #     image, mask = self.elastic(image=image, mask=mask, seed=self.seed) #cv2.INTER_LANCZOS4
         image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
-        # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LINEAR).astype(np.int8)
-
         return self.transform(image=image, mask=mask)
 
 
     def val_transform_img(self, image, mask):
         image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
-        # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LINEAR).astype(np.int8)
-
         return self.norm_totensor(image=image, mask=mask)
 
     def test_transform_img(self, image):
-    # rand = random.random()
-    # if rand <= self.p:
-    #     # option for custom transform 
-    #     image, mask = self.elastic(image=image, mask=mask, seed=self.seed)
         image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LINEAR).astype(np.float32)
-    # mask = cv2.resize(mask.astype(np.float32), (0,0), fx =2, fy =2, interpolation=cv2.INTER_LANCZOS4).astype(np.int8)
-
         return self.norm_totensor(image=image)
 
+
+
+_transform_entropoints = {
+    'transunet': transform_transunet
+}
+
+
+def transform_entrypoint(criterion_name):
+    return _transform_entropoints[criterion_name]
+
+
+def is_transform(criterion_name):
+    return criterion_name in _transform_entropoints
+
+
+def create_transforms(criterion_name, **kwargs):
+    if is_transform(criterion_name):
+        create_fn = transform_entrypoint(criterion_name)
+        criterion = create_fn(**kwargs)
+    else:
+        raise RuntimeError('Unknown loss (%s)' % criterion_name)
+    return criterion
 
 #testcode
 # import torch

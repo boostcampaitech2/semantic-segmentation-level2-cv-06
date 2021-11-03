@@ -1,22 +1,21 @@
-import argparse
-import os
 import torch
 from torch.utils.data import DataLoader
 
 import sys
 sys.path.append('/opt/ml/segmentation/semantic-segmentation-level2-cv-06')
-from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
+from dataset import CustomDataLoader, collate_fn, train_transform
 from tqdm import tqdm
 from collections import Counter
+import json
 
 
 
-def train(args):
+def pixelcount(args):
 
     use_cuda = torch.cuda.is_available()
 
     # dataset
-    train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
+    train_dataset = CustomDataLoader(data_dir=args['train_path'], mode='train', transform=train_transform)
 
     # data_loader
     train_loader = DataLoader(
@@ -28,7 +27,6 @@ def train(args):
         collate_fn=collate_fn,
         drop_last=False
     )
-
 
     n_classes = 11
     t_count = dict([(k, 0) for k in range(n_classes)])
@@ -47,15 +45,44 @@ def train(args):
     return t_count
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    
-    # Container environment
-    parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train.json'))
-    parser.add_argument('--val_path', type=str, default=os.environ.get('SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))
+def read_json(json_dir: str):
+    with open(json_dir) as json_file:
+        source_anns = json.load(json_file)
 
-    args = parser.parse_args()
+    return source_anns['annotations']
 
-    counts = train(args)
-    print(counts)
-    print(counts.values())
+
+
+def instancecount(args, method = 'ratio'):
+
+    source = read_json(args['train_path'])
+    c = Counter([annos['category_id'] for annos in source])
+
+    if method == 'ratio':
+        s = sum(c.values())
+        for k in c.keys():
+            c[k] = round(s / c[k], 2)
+        
+        c[0] = 1    #강제로 배경의 가중치는 1이라고 가정
+    else:
+        c[0] = len(source['images']) #강제로 이미지 갯수마다 배경은 한 개라고 가정
+
+
+    return dict(sorted(c.items(), key = lambda x: x[0]))
+
+
+def get_weight(mode = 'instance'):
+    args = {}
+    args['train_path'] = '/opt/ml/segmentation/input/data/train.json'
+    args['val_path'] = '/opt/ml/segmentation/input/data/val.json'
+
+    if mode == 'instance':
+        counts = instancecount(args)
+    else: 
+        counts = pixelcount(args)
+    return counts.values()
+
+
+
+#testcode
+# print(get_weight())

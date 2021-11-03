@@ -282,23 +282,13 @@ class DiceLoss(nn.Module):
         return loss / self.n_classes
 
 
-# class custom(nn.Module):
-#     def __init__(self):
-#         super().__init__()
-#         self.dice = DiceLoss()
-#         self.soft = LabelSmoothingLoss()
-    
-#     def forward(self, inputs,):
-#         return out
-
 
 _criterion_entropoints = {
     'cross_entropy': nn.CrossEntropyLoss,
     'focal': FocalLoss,
     'rmi': RMILoss,
     'smooth':LabelSmoothingLoss,
-    'dice' : DiceLoss,
-    # 'custom': custom
+    'dice' : DiceLoss
 }
 
 

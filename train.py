@@ -135,7 +135,7 @@ def train(model_dir, args):
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
     
     #scheduler option
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, [20]) if args.schedule else None
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, [30]) if args.schedule else None
 
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
@@ -317,7 +317,7 @@ if __name__ == '__main__':
     parser.add_argument('--schedule', default=False, help='option for scheduler function')
     
     # Container environment
-    parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train.json'))
+    parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train_all.json'))
     parser.add_argument('--val_path', type=str, default=os.environ.get('SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './runs'))
 
