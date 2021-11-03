@@ -14,13 +14,13 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import wandb
 
-from dataset import CustomDataLoader, train_transform, val_transform, cp_collate_fn, collate_fn
-from coco import CocoDetectionCP
+from datasets.dataset import CustomDataLoader, train_transform, val_transform, cp_collate_fn, collate_fn
+from datasets.coco import CocoDetectionCP
 
 from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 #tmp import for testing
-from one_off.transform_test import transform_custom, create_transforms
+from datasets.transform_test import transform_custom, create_transforms
 from tqdm import tqdm
 
 
@@ -92,16 +92,22 @@ def train(model_dir, args):
         from datasets.dataset import train_transform, val_transform
 
     # dataset
-    cp_train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
+    if args.copypaste:
+        train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
     '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train.json', # annfile
     train_transform)
+    
+    else:
+        train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
+
+    
 
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
 
 
     # data_loader
-    cp_train_loader = DataLoader(
-        dataset=cp_train_dataset,
+    train_loader = DataLoader(
+        dataset=train_dataset,
         batch_size=args.batch_size,
         num_workers=args.workers,
         shuffle=True,
@@ -159,9 +165,9 @@ def train(model_dir, args):
         model.train()
         
         hist = np.zeros((n_classes, n_classes))
-        figure = None
+        # figure = None
 
-        for i, (images, masks) in enumerate(cp_train_loader):
+        for i, (images, masks) in enumerate(train_loader):
             images = torch.stack(images)
             masks = torch.stack(masks).long()
 
@@ -203,21 +209,21 @@ def train(model_dir, args):
             hist = add_hist(hist, masks, outputs, n_class=n_classes)
             acc, acc_cls, mIoU, fwavacc, IoU = label_accuracy_score(hist)
 
-            if figure is None:
+            # if figure is None:
                 # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
-                figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
+                # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
             # step 주기에 따른 loss 출력
             if (i + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
                 print(
-                    f"Epoch[{epoch+1}/{args.epochs}] Step [{i+1}/{len(cp_train_loader)}] || "
+                    f"Epoch[{epoch+1}/{args.epochs}] Step [{i+1}/{len(train_loader)}] || "
                     f"training loss {round(loss.item(),4)} || mIoU {round(mIoU,4)} || lr {current_lr}"
                 )
 
                 # wandb log
                 if args.wandb == True:
                     wandb.log({
-                        "Media/train predict images": figure,
+                        # "Media/train predict images": figure,
                         "Train/Train loss": round(loss.item(), 4),
                         "Train/Train mIoU": round(mIoU.item(), 4),
                         "Train/Train acc": round(acc.item(), 4),
@@ -328,7 +334,8 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
     parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
     parser.add_argument('--schedule', default=False, help='option for scheduler function')
-    
+    parser.add_argument('--copypaste', default=False, help='option for copy_paste')
+
     # Container environment
     parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train_all.json'))
     parser.add_argument('--val_path', type=str, default=os.environ.get('SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))

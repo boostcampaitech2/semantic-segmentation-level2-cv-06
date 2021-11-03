@@ -7,7 +7,7 @@ import albumentations.augmentations.transforms as trans
 from PIL import Image, ImageOps, ImageEnhance
 from albumentations.core.transforms_interface import ImageOnlyTransform
 
-
+from copy_paste import CopyPaste
 
 #taken from: https://www.kaggle.com/bguberfain/elastic-transform-for-data-augmentation
 # Function to distort image
@@ -292,10 +292,32 @@ class transform_augmix():
         return self.to_tensor(image=image)
 
 
+class transform_copypaste():
+    def __init__(self, seed, p=0.5, scale = None):
+        self.transform = A.Compose([
+        # A.RandomScale(scale_limit=(-0.9, 1), p=1), #LargeScaleJitter from scale of 0.1 to 2
+        # A.PadIfNeeded(512, 512, border_mode=0), #pads with image in the center, not the top left like the paper
+        # A.RandomCrop(512, 512),
+        CopyPaste(blend=True, sigma=1, pct_objects_paste=0.4, p=1.), #pct_objects_paste is a guess
+        A.pytorch.ToTensorV2()], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
+        )
+
+        self.to_tensor = A.Compose([A.pytorch.ToTensorV2()])
+    def transform_img(self, image, mask):
+        return self.transform(image=image, mask=mask)
+
+    def val_transform_img(self, image, mask):
+        return self.to_tensor(image=image, mask=mask)
+
+    def test_transform_img(self, image):
+        return self.to_tensor(image=image)
+
+
 ##모든 코드는 이 줄 위에 써주세요
 _transform_entropoints = {
     'transunet': transform_transunet,
-    'augmix' : transform_augmix
+    'augmix' : transform_augmix,
+    'copy_paste' : transform_copypaste
 }
 
 
