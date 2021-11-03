@@ -334,7 +334,6 @@ if __name__ == '__main__':
     # args.batch_size = 4
     # args.schedule = True
     # args.lr = 0.001
-    # args.finetune = True
 
     # check_args(args)  #test null
     print(args)
