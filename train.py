@@ -17,6 +17,7 @@ from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
 from loss import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 
+import pickle
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -74,8 +75,23 @@ def train(model_dir, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
+
+    #for cp
+    with open('./classdict_cp.pickle', 'rb') as f:
+        augmix_data = pickle.load(f)
+    
+    # print('auhmix_data', augmix_data.items())
+
+
+    # augmix_path = os.path.join('./classdict_cp.pickle')
+
+    # np_load_old = np.load
+    # np.load = lambda *a, **k: np_load_old(*a, allow_pickle=True, **k)
+    # augmix_data = np.load(augmix_path)
+    # augmix_data = augmix_data.item()
+
     # dataset
-    train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
+    train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform, augmix=augmix_data)
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
     
     # data_loader
