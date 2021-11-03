@@ -83,12 +83,6 @@ class CustomDataLoader(Dataset):
         # 전체 dataset의 size를 return
         return len(self.coco.getImgIds())
 
-# class Custom_CocoDetectionCP(CocoDetectionCP):
-#     root = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data'
-#     annFile = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train_all.json'
-#     def __init__(self, transforms, root=root, annFile=annFile):
-#         super(Custom_CocoDetectionCP, self).__init__()
-
 def make_final_mask(data):
     image = data['image']
     bboxes = data['bboxes']
@@ -115,10 +109,6 @@ def train_collate_fn(batch):
         data = make_final_mask(i)
         new_batch[0].append(data[0])
         new_batch[1].append(data[1])
-    # print(new_batch)
-    # print('one len', len(new_batch[0]))
-    # print('type:', type(new_batch[0]))
-    # print('len', len(new_batch))
     return new_batch
 
 def test_collate_fn(batch):

@@ -40,3 +40,6 @@ example.ipynb
 
 *.pickle
 
+EDA/
+
+checking_image.py
