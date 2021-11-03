@@ -13,7 +13,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import wandb
 
-from dataset import CustomDataLoader, train_transform, val_transform, train_collate_fn, test_collate_fn
+from dataset import CustomDataLoader, train_transform, val_transform, cp_collate_fn, collate_fn
 from coco import CocoDetectionCP
 
 from loss.losses import create_criterion
@@ -77,20 +77,20 @@ def train(model_dir, args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # dataset
-    train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
+    cp_train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
     '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train.json', # annfile
     train_transform)
 
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
     
     # data_loader
-    train_loader = DataLoader(
-        dataset=train_dataset,
+    cp_train_loader = DataLoader(
+        dataset=cp_train_dataset,
         batch_size=args.batch_size,
         num_workers=args.workers,
         shuffle=True,
         pin_memory=use_cuda,
-        collate_fn=train_collate_fn,
+        collate_fn=cp_collate_fn,
         drop_last=True
     )
 
@@ -100,7 +100,7 @@ def train(model_dir, args):
         num_workers=args.workers,
         shuffle=False,
         pin_memory=use_cuda,
-        # collate_fn=test_collate_fn,
+        collate_fn=collate_fn,
         drop_last=True
     )
 
@@ -139,18 +139,10 @@ def train(model_dir, args):
         model.train()
         
         hist = np.zeros((n_classes, n_classes))
-        # a = next(iter(train_loader))
-        # print('type', type(a))
-        # print('atype', type(a[0]))
-        # print('len', len(a))
-        # print('alen', len(a[0]))
-        # print(a[0][0].shape, a[0][1].shape)
         figure = None
-            
 
-        for i, (images, masks) in enumerate(train_loader):
+        for i, (images, masks) in enumerate(cp_train_loader):
             images = torch.stack(images)
-            # print('after stack!!',images[0].shape)
             masks = torch.stack(masks).long()
             
             # gpu device 할당
@@ -191,7 +183,7 @@ def train(model_dir, args):
             if (i + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
                 print(
-                    f"Epoch[{epoch+1}/{args.epochs}] Step [{i+1}/{len(train_loader)}] || "
+                    f"Epoch[{epoch+1}/{args.epochs}] Step [{i+1}/{len(cp_train_loader)}] || "
                     f"training loss {round(loss.item(),4)} || mIoU {round(mIoU,4)} || lr {current_lr}"
                 )
 
@@ -218,9 +210,9 @@ def train(model_dir, args):
             figure = None
 
             hist = np.zeros((n_classes, n_classes))
-            for images, masks in val_loader:
-                # images = torch.stack(images)
-                masks = masks.long()
+            for images, masks, _ in val_loader:
+                images = torch.stack(images)
+                masks = torch.stack(masks).long()
 
                 # gpu device 할당
                 images, masks = images.to(device), masks.to(device)

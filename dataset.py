@@ -69,7 +69,7 @@ class CustomDataLoader(Dataset):
                 transformed = self.transform(image=images, mask=masks)
                 images = transformed["image"]
                 masks = transformed["mask"]
-            return images, masks
+            return images, masks, image_infos
         elif self.mode == 'test':
             # transform -> albumentations
             if self.transform is not None:
@@ -103,7 +103,7 @@ def make_final_mask(data):
     return image, final_masks
 
 
-def train_collate_fn(batch):
+def cp_collate_fn(batch):
     new_batch = [[], []]
     for i in batch:
         data = make_final_mask(i)
@@ -111,7 +111,7 @@ def train_collate_fn(batch):
         new_batch[1].append(data[1])
     return new_batch
 
-def test_collate_fn(batch):
+def collate_fn(batch):
     return tuple(zip(*batch)) 
 
 # train_transform = A.Compose([
