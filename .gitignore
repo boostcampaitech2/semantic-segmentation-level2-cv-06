@@ -18,11 +18,14 @@ wandb/
 # input 심볼릭 링크로 현재 디렉토리에 불러와서 사용
 input
 
-# git clone 
-nvidia/
 
 # personal
 personal/
+example.ipynb
+*.ipynb
+*.pickle
+EDA/
+checking_image.py
 
 # weights
 weights/
@@ -33,13 +36,3 @@ weights/
 
 #result
 *.out
-
-example.ipynb
-
-*.ipynb
-
-*.pickle
-
-EDA/
-
-checking_image.py
