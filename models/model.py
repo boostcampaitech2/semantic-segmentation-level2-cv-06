@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from torchvision import models
 import segmentation_models_pytorch as smp
-from models.hrnetv2 import HighResolutionNet
-from models.ocrnet import HRNet, HRNet_Mscale
+from models.HRNET_OCR.hrnetv2 import HighResolutionNet
+from models.HRNET_OCR.ocrnet import HRNet, HRNet_Mscale
 from one_off.vit_seg_modeling import get_transunet
 from loss.losses import DiceLoss, LabelSmoothingLoss
 from torch.nn import CrossEntropyLoss

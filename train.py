@@ -14,11 +14,11 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import wandb
 
-from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
+from datasets.dataset import CustomDataLoader, collate_fn, train_transform, val_transform
 from loss.losses import create_criterion
-from utils import add_hist, grid_image, label_accuracy_score
-#tmp import for testing
-from one_off.transform_test import transform_custom
+from utils.utils import add_hist, grid_image, label_accuracy_score
+# tmp import for testing
+from datasets.transform_test import transform_custom
 from tqdm import tqdm
 
 
@@ -85,7 +85,7 @@ def train(model_dir, args):
         train_transform = custom.transform_img
         val_transform = custom.val_transform_img
     else:
-        from dataset import train_transform, val_transform
+        from datasets.dataset import train_transform, val_transform
 
     # dataset
     train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
@@ -168,10 +168,14 @@ def train(model_dir, args):
 
             # calculate loss
             if args.model in ('OCRNet', 'MscaleOCRNet'):
-                aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
-                main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                if args.criterion == 'ohem_cross_entropy':
+                    aux_loss = criterion(outputs['aux'], masks)
+                    main_loss = criterion(outputs['pred'], masks)
+                else:
+                    aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
+                    main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+
                 loss = 0.4 * aux_loss + main_loss
-                loss = loss.mean()
                 outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
 
             elif args.model in ('TransUnet'):

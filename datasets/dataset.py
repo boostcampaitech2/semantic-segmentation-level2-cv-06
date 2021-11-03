@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from transform_test import RandomAugMix
+from datasets.transform_test import RandomAugMix
 
 dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
