@@ -18,7 +18,7 @@ from datasets.dataset import CustomDataLoader, collate_fn, train_transform, val_
 from loss.losses import create_criterion
 from utils.utils import add_hist, grid_image, label_accuracy_score
 # tmp import for testing
-from datasets.transform_test import transform_custom
+from datasets.transform_test import create_transforms
 from tqdm import tqdm
 
 
@@ -89,7 +89,7 @@ def train(model_dir, args):
     else:
         from datasets.dataset import train_transform, val_transform
 
-    # dataset
+    # # dataset
     cp_train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
     '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train.json', # annfile
     train_transform)
@@ -309,6 +309,7 @@ def train(model_dir, args):
                     },
                     step=step)
             print()
+
 
 def check_args(args):
     if (args.model in ('OCRNet', 'MscaleOCRNet')) ^ (args.criterion in ('rmi', 'smooth', 'dice')):
