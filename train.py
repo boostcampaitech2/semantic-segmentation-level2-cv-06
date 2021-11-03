@@ -20,7 +20,7 @@ from datasets.coco import CocoDetectionCP
 from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 #tmp import for testing
-from datasets.transform_test import transform_custom, create_transforms
+from datasets.transform_test import create_transforms
 from tqdm import tqdm
 
 
@@ -83,11 +83,10 @@ def train(model_dir, args):
     # transform selector
     if args.custom_trs:
         #override
-        custom = transform_custom(args.seed)
+        custom = create_transforms(args.custom_trs)
         train_transform = custom.transform_img
         val_transform = custom.val_transform_img
-
-        criterion = create_transforms(args.custom_trs)
+        
     else:
         from datasets.dataset import train_transform, val_transform
 
@@ -184,10 +183,14 @@ def train(model_dir, args):
 
             # calculate loss
             if args.model in ('OCRNet', 'MscaleOCRNet'):
-                aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
-                main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+                if args.criterion == 'ohem_cross_entropy':
+                    aux_loss = criterion(outputs['aux'], masks)
+                    main_loss = criterion(outputs['pred'], masks)
+                else:
+                    aux_loss = criterion(outputs['aux'], masks, do_rmi=False)
+                    main_loss = criterion(outputs['pred'], masks, do_rmi=True)
+
                 loss = 0.4 * aux_loss + main_loss
-                loss = loss.mean()
                 outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
 
             elif args.model in ('TransUnet'):
