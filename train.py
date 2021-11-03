@@ -95,10 +95,11 @@ def train(model_dir, args):
         train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
     '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train.json', # annfile
     train_transform)
+        collate_fn_func = cp_collate_fn
     
     else:
         train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
-
+        collate_fn_func = collate_fn
     
 
     val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
@@ -111,7 +112,7 @@ def train(model_dir, args):
         num_workers=args.workers,
         shuffle=True,
         pin_memory=use_cuda,
-        collate_fn=cp_collate_fn,
+        collate_fn=collate_fn_func,
         drop_last=True
     )
 
