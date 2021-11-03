@@ -10,7 +10,6 @@ from datasets.dataset import CustomDataLoader, collate_fn
 from torch.utils.data import DataLoader
 import albumentations as A
 from datasets.transform_test import transform_custom
-from one_off import tta
 
 
 @torch.no_grad()
@@ -46,9 +45,6 @@ def inference(model_dir, args):
     state_dict = checkpoint.state_dict()
     model.load_state_dict(state_dict)
     model = model.to(device)
-
-    if args.tta:
-        model = tta.custom_tta().get_tta(model)
         
     size = 256
     transform = A.Compose([A.Resize(size, size)])
@@ -105,19 +101,9 @@ if __name__ == '__main__':
 
     # custom args
     parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
-    parser.add_argument('--tta', default=False, help='option for tta')
     
 
     args = parser.parse_args()
-
-    # debug options: must not commit
-    # args.custom_trs = True
-    # args.tta = True
-    # args.model = 'TransUnet'
-    # args.batch_size = 4
-    # args.model_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/runs/transunet_b16_SGD_big2'
-    # args.output_dir = '/opt/ml/segmentation/output'
-    # # debug end
 
     model_dir = args.model_dir
     output_dir = args.output_dir

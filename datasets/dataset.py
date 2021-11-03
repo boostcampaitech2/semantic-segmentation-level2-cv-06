@@ -70,7 +70,7 @@ class CustomDataLoader(Dataset):
                 transformed = self.transform(image=images, mask=masks)
                 images = transformed["image"]
                 masks = transformed["mask"]
-            return images, masks, image_infos
+            return images, masks # image_infos
         elif self.mode == 'test':
             # transform -> albumentations
             if self.transform is not None:
