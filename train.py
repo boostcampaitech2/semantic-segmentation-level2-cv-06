@@ -18,7 +18,7 @@ from dataset import CustomDataLoader, collate_fn, train_transform, val_transform
 from loss.losses import create_criterion
 from utils import add_hist, grid_image, label_accuracy_score
 #tmp import for testing
-from one_off.transform_test import transform_custom
+from one_off.transform_test import transform_custom, create_transforms
 from tqdm import tqdm
 
 
@@ -81,11 +81,13 @@ def train(model_dir, args):
     # transform selector
     if args.custom_trs:
         #override
-        custom = transform_custom(args.seed, p = 0.3, scale = 2)
+        custom = transform_custom(args.seed)
         train_transform = custom.transform_img
         val_transform = custom.val_transform_img
+
+        criterion = create_transforms(args.custom_trs)
     else:
-        from dataset import train_transform, val_transform
+        from datasets.dataset import train_transform, val_transform
 
     # dataset
     train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)

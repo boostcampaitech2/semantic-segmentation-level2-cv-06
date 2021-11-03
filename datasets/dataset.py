@@ -9,7 +9,7 @@ from albumentations.pytorch import ToTensorV2
 
 from transform_test import RandomAugMix
 
-dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/'
+dataset_path = '../input/data/'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                   'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
 
@@ -88,7 +88,6 @@ def collate_fn(batch):
 
 
 train_transform = A.Compose([
-    RandomAugMix(severity=3, width=14, alpha=1., p=1),
     ToTensorV2()
 ])
 

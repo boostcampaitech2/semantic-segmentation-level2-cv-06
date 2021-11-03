@@ -6,11 +6,10 @@ from tqdm import tqdm
 from importlib import import_module
 
 import torch
-from dataset import CustomDataLoader, collate_fn, test_transform
+from datasets.dataset import CustomDataLoader, collate_fn
 from torch.utils.data import DataLoader
 import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from one_off.transform_test import transform_custom
+from datasets.transform_test import transform_custom
 from one_off import tta
 
 
@@ -25,7 +24,7 @@ def inference(model_dir, args):
         custom = transform_custom(args.seed, p = 0.3)
         test_transform = custom.test_transform_img
     else:
-        from dataset import test_transform
+        from datasets.dataset import test_transform
 
     test_dataset = CustomDataLoader(data_dir=args.test_path, mode='test', transform=test_transform)
     test_loader = DataLoader(

@@ -1,13 +1,13 @@
 import torch
 from torch.utils.data import DataLoader
+import os
 
 import sys
-sys.path.append('/opt/ml/segmentation/semantic-segmentation-level2-cv-06')
-from dataset import CustomDataLoader, collate_fn, train_transform
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from datasets.dataset import CustomDataLoader, collate_fn, train_transform
 from tqdm import tqdm
 from collections import Counter
 import json
-
 
 
 def pixelcount(args):
@@ -52,7 +52,6 @@ def read_json(json_dir: str):
     return source_anns['annotations']
 
 
-
 def instancecount(args, method = 'ratio'):
 
     source = read_json(args['train_path'])
@@ -73,8 +72,8 @@ def instancecount(args, method = 'ratio'):
 
 def get_weight(mode = 'instance'):
     args = {}
-    args['train_path'] = '/opt/ml/segmentation/input/data/train.json'
-    args['val_path'] = '/opt/ml/segmentation/input/data/val.json'
+    args['train_path'] = '../input/data/train.json'
+    args['val_path'] = '../input/data/val.json'
 
     if mode == 'instance':
         counts = instancecount(args)

@@ -3,11 +3,9 @@ import cv2
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.ndimage.filters import gaussian_filter
 import albumentations as A
-import random
 import albumentations.augmentations.transforms as trans
 from PIL import Image, ImageOps, ImageEnhance
-from albumentations.core.transforms_interface import ImageOnlyTransform, DualTransformCustom
-from albumentations.augmentations import functional as F
+from albumentations.core.transforms_interface import ImageOnlyTransform
 
 
 
@@ -83,36 +81,6 @@ class transform_transunet():
     def test_transform_img(self, image):
         image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LINEAR).astype(np.float32)
         return self.norm_totensor(image=image)
-
-
-
-_transform_entropoints = {
-    'transunet': transform_transunet
-}
-
-
-def transform_entrypoint(criterion_name):
-    return _transform_entropoints[criterion_name]
-
-
-def is_transform(criterion_name):
-    return criterion_name in _transform_entropoints
-
-
-def create_transforms(criterion_name, **kwargs):
-    if is_transform(criterion_name):
-        create_fn = transform_entrypoint(criterion_name)
-        criterion = create_fn(**kwargs)
-    else:
-        raise RuntimeError('Unknown loss (%s)' % criterion_name)
-    return criterion
-
-#testcode
-# import torch
-# import albumentations.pytorch
-# t = transform_custom(1024).transform_img(np.ones((512, 512, 3)), np.ones((512, 512)))
-# print('dum')
-
 
 
 def int_parameter(level, maxval):
@@ -245,9 +213,8 @@ def normalize(image):
     """Normalize input image channel-wise to zero mean and unit variance."""
     return image - 127
 
-def apply_op(image, op, severity):
-    #   image = np.clip(image, 0, 255)
 
+def apply_op(image, op, severity):
     image = image * 255
     image = image.astype(np.uint8)
     
@@ -255,6 +222,7 @@ def apply_op(image, op, severity):
     pil_img = op(pil_img, severity)
 
     return np.asarray(pil_img)
+
 
 def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
     """Perform AugMix augmentations and compute mixture.
@@ -281,17 +249,12 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
             image_aug = apply_op(image_aug, op, severity)
         # Preprocessing commutes since all coefficients are convex
         mix += ws[i] * image_aug
-#         mix += ws[i] * normalize(image_aug)
 
-    # mixed = (1 - m) * image + m * mix
     mixed = m * (image * 255) + (1 - m) * mix
-    # mixed = (1 - m) * normalize(image) + m * mix
-
     return mixed  / 255
 
 
 class RandomAugMix(ImageOnlyTransform):
-
     def __init__(self, severity=3, width=3, depth=-1, alpha=1., always_apply=False, p=0.5):
         super().__init__(always_apply, p)
         self.severity = severity
@@ -309,3 +272,45 @@ class RandomAugMix(ImageOnlyTransform):
         )
         return image
 
+
+class transform_augmix():
+    def __init__(self, seed, p=0.5, scale = None):
+        self.transform = A.Compose([
+            RandomAugMix(severity=3, width=14, alpha=1., p=1),
+            A.pytorch.ToTensorV2()
+        ])
+
+        self.to_tensor = A.Compose([A.pytorch.ToTensorV2()])
+    def transform_img(self, image, mask):
+        return self.transform(image=image, mask=mask)
+
+
+    def val_transform_img(self, image, mask):
+        return self.to_tensor(image=image, mask=mask)
+
+    def test_transform_img(self, image):
+        return self.to_tensor(image=image)
+
+
+##모든 코드는 이 줄 위에 써주세요
+_transform_entropoints = {
+    'transunet': transform_transunet,
+    'augmix' : transform_augmix
+}
+
+
+def transform_entrypoint(criterion_name):
+    return _transform_entropoints[criterion_name]
+
+
+def is_transform(criterion_name):
+    return criterion_name in _transform_entropoints
+
+
+def create_transforms(criterion_name, **kwargs):
+    if is_transform(criterion_name):
+        create_fn = transform_entrypoint(criterion_name)
+        criterion = create_fn(**kwargs)
+    else:
+        raise RuntimeError('Unknown loss (%s)' % criterion_name)
+    return criterion
