@@ -19,7 +19,7 @@ from datasets.coco import CocoDetectionCP
 
 from loss.losses import create_criterion
 from optimizer.optim_sche import get_opt_sche
-from utils import add_hist, grid_image, label_accuracy_score
+from utils.utils import add_hist, grid_image, label_accuracy_score
 #tmp import for testing
 from datasets.transform_test import create_transforms
 from tqdm import tqdm
@@ -94,7 +94,7 @@ def train(model_dir, args):
     # dataset
     if args.copypaste:
         train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
-    '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train.json', # annfile
+    args.train_path, # annfile
     train_transform)
         collate_fn_func = cp_collate_fn
     
@@ -349,8 +349,9 @@ if __name__ == '__main__':
     parser.add_argument('--gamma', type=float, default=0.1, help='stepLR gamma (default: 0.1)')
 
     # Container environment
-    parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train_all.json'))
-    parser.add_argument('--val_path', type=str, default=os.environ.get('SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))
+    # path 바꿔야됌
+    parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/sample_data/train.json'))
+    parser.add_argument('--val_path', type=str, default=os.environ.get('SM_CHANNEL_VAL', '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/sample_data/train.json'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './runs'))
 
     # wandb

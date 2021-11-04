@@ -40,9 +40,9 @@ def inference(model_dir, args):
     )
 
     model_path = os.path.join(model_dir)
-    checkpoint = torch.load(model_path, map_location=device)
+    # checkpoint = torch.load(model_path, map_location=device)
     # state_dict = checkpoint.state_dict()
-    model.load_state_dict(checkpoint)
+    model.load_state_dict(model_path)
     model = model.to(device)
         
     size = 256
