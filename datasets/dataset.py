@@ -10,8 +10,8 @@ from albumentations.pytorch import ToTensorV2
 from datasets.transform_test import RandomAugMix
 
 # copy paste 
-from copy_paste import CopyPaste
-from coco import CocoDetectionCP
+from datasets.copy_paste import CopyPaste
+from datasets.coco import CocoDetectionCP
 import torch
 
 dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/'

@@ -44,47 +44,14 @@ def inference(model_dir, args):
     state_dict = checkpoint.state_dict()
     model.load_state_dict(state_dict)
     model = model.to(device)
+
+    torch.save(model.state_dict(), args.save_dir)
         
-    size = 256
-    transform = A.Compose([A.Resize(size, size)])
-
-    model.eval()
-
-    file_name_list = []
-    preds_array = np.empty((0, size*size), dtype=np.compat.long)
-
-    with torch.no_grad():
-        for step, (imgs, image_infos) in enumerate(tqdm(test_loader, leave=False)):
-
-            # inference (512 x 512)
-            if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
-                outs = model(torch.stack(imgs).to(device))['out']
-                oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
-            elif args.model in ('MscaleOCRNet'):
-                outs = model(torch.stack(imgs).to(device))
-                oms = torch.argmax(outs['pred'].squeeze(), dim=1).detach().cpu().numpy()
-            else:
-                outs = model(torch.stack(imgs).to(device))
-                oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
-            
-            
-            # resize (256 x 256)
-            temp_mask = []
-            for img, mask in zip(np.stack(imgs), oms):
-                transformed = transform(image=img, mask=mask)
-                mask = transformed['mask']
-                temp_mask.append(mask)
-
-            oms = np.array(temp_mask)
-            oms = oms.reshape([oms.shape[0], size*size]).astype(int)
-            preds_array = np.vstack((preds_array, oms))
-
-            file_name_list.append([i['file_name'] for i in image_infos])
     
-    print("End prediction!")
-    file_names = [y for x in file_name_list for y in x]
+    
+    print(f"End save at {args.save_dir}")
 
-    return file_names, preds_array
+    return None
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -100,6 +67,7 @@ if __name__ == '__main__':
 
     # custom args
     parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
+    parser.add_argument('--save_dir', type = str, help='option for custom transform function')
     
     
 
@@ -108,31 +76,13 @@ if __name__ == '__main__':
 
     # debug options: must not commit
     args.model_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/runs/transunet_b16_SGD_big_full/best.pt'
+    args.save_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/save_state/transunet_b16_SGD_big_full.pt'
     args.custom_trs = True
     args.model = 'TransUnet'
     # debug end
 
     model_dir = args.model_dir
-    output_dir = args.output_dir
+    os.makedirs('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/save_state/', exist_ok=True)
 
-    os.makedirs(output_dir, exist_ok=True)
+    inference(model_dir, args)
 
-    # load sample_submission.csv
-    submission = pd.read_csv('/opt/ml/segmentation/baseline_code/submission/sample_submission.csv', index_col=None)
-
-    # prediction using test set
-    file_names, preds = inference(model_dir, args)
-
-    # write PredictionString / revised for efficiency
-    id_list, mask_list = [], []
-    for file_name, string in tqdm(zip(file_names, preds), leave=False, total = preds.shape[0]):
-        # submission = submission.append({"image_id": file_name, "PredictionString": ' '.join(str(e) for e in string.tolist())},
-        #                                ignore_index=True)
-        id_list.append(file_name)
-        mask_list.append(' '.join(str(e) for e in string.tolist()))
-
-    submission['image_id'] = id_list
-    submission['PredictionString'] = mask_list
-    
-    # save submission.csv
-    submission.to_csv(output_dir+'/submission.csv', index=False)

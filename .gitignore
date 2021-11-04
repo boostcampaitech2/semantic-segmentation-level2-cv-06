@@ -30,6 +30,7 @@ checking_image.py
 # weights
 weights/
 *.pth
+*.pt
 
 # system
 .ipynb_*/
