@@ -286,57 +286,9 @@ class RandomAugMix(ImageOnlyTransform):
         return image
 
 
-class transform_augmix():
-    def __init__(self, seed, p=0.5, scale=None):
-        self.transform = A.Compose([
-            RandomAugMix(severity=3, width=14, alpha=1., p=1),
-            A.pytorch.ToTensorV2()
-        ])
-
-        self.to_tensor = A.Compose([A.pytorch.ToTensorV2()])
-
-    def transform_img(self, image, mask):
-        return self.transform(image=image, mask=mask)
-
-    def val_transform_img(self, image, mask):
-        return self.to_tensor(image=image, mask=mask)
-
-    def test_transform_img(self, image):
-        return self.to_tensor(image=image)
-
-
-class transform_copypaste():
-    def __init__(self, seed, p=0.5, scale=None):
-        self.transform = A.Compose([
-            # A.RandomScale(scale_limit=(-0.9, 1), p=1), #LargeScaleJitter from scale of 0.1 to 2
-            # A.PadIfNeeded(512, 512, border_mode=0), #pads with image in the center, not the top left like the paper
-            # A.RandomCrop(512, 512),
-            CopyPaste(blend=True, sigma=1, pct_objects_paste=0.4,
-                      p=1.),  # pct_objects_paste is a guess
-            A.pytorch.ToTensorV2()], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
-        )
-
-        self.to_tensor = A.Compose([A.pytorch.ToTensorV2()])
-
-    # def transform_img(self, image, mask):
-        # return self.transform(image=image, mask=mask)
-    def transform_img(self):
-        return self.transform
-
-    # def val_transform_img(self, image, mask):
-        # return self.to_tensor(image=image, mask=mask)
-    def val_transform_img(self):
-        return self.to_tensor
-
-    def test_transform_img(self, image):
-        return self.to_tensor(image=image)
-
-
 # 모든 코드는 이 줄 위에 써주세요
 _transform_entropoints = {
-    'TransUnet': transform_transunet,
-    'augmix' : transform_augmix,
-    'copy_paste' : transform_copypaste
+    'TransUnet': transform_transunet
 }
 
 
@@ -350,8 +302,12 @@ def is_transform(criterion_name):
 
 def create_transforms(criterion_name, seed, **kwargs):
     if is_transform(criterion_name):
+        print(criterion_name)
         create_fn = transform_entrypoint(criterion_name)
+        print(create_fn)
         criterion = create_fn(seed, **kwargs)
+        print('here1')
+        print(criterion.transform_img())
     else:
         raise RuntimeError('Unknown transform (%s)' % criterion_name)
     return criterion

@@ -305,7 +305,6 @@ def copy_paste_class(dataset_class):
             img_data = self.copy_paste(**img_data, **paste_img_data) 
             img_data = self.post_transforms(**img_data) # totensor같은 copypaste 다음에 넣은 transform
             img_data['paste_index'] = paste_idx # 붙여넣은 이미지가 어디서 온건지
-        print('copy paste!!!')
         return img_data
 
     setattr(dataset_class, '_split_transforms', _split_transforms)

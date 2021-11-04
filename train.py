@@ -14,16 +14,14 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import wandb
 
-from datasets.dataset import CustomDataLoader, train_transform, val_transform, cp_collate_fn, collate_fn
+from datasets.dataset import CustomDataLoader, train_transform, train_augmix_transform, train_copypaste_transform, val_transform, cp_collate_fn, collate_fn
 from datasets.coco import CocoDetectionCP
 
 from loss.losses import create_criterion
 from optimizer.optim_sche import get_opt_sche
 from utils.utils import add_hist, grid_image, label_accuracy_score
-# tmp import for testing
 from datasets.transform_test import create_transforms
 from tqdm import tqdm
-
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -81,38 +79,39 @@ def train(model_dir, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    # transform selector
-    if args.aug_option:
-        # override
+
+    # dataset
+    from datasets.dataset import train_transform, val_transform
+    val_dataset = CustomDataLoader(
+        data_dir=args.val_path, mode='val', transform=val_transform)
+
+    if args.aug_option == 'augmix':
+        train_dataset = CustomDataLoader(
+            data_dir=args.train_path, mode='train', transform=train_augmix_transform)
+        collate_fn_func = collate_fn
+
+    elif args.aug_option == 'copy_paste':
+        train_dataset = CocoDetectionCP(
+            args.train_copypaste_path,  # image root path
+            args.train_path,  # annfile
+            train_copypaste_transform
+        )
+        collate_fn_func = cp_collate_fn
+    elif args.aug_option == 'transunet':
+
         custom = create_transforms(args.aug_option, args.seed)
         train_transform = custom.transform_img()
         val_transform = custom.val_transform_img()
 
+        train_dataset = CustomDataLoader(
+        data_dir=args.train_path, mode='train', transform=train_transform)
+        collate_fn_func = collate_fn
     else:
-        from datasets.dataset import train_transform, val_transform
-
-    # dataset
-    if args.aug_option == 'copy_paste':
-        train_dataset = CocoDetectionCP(
-            '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # image root path
-            args.train_path,  # annfile
-            train_transform
-        )
-        collate_fn_func = cp_collate_fn
-
-    else:
-        # train_dataset = CocoDetectionCP(
-        #     '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # image root path
-        #     args.train_path, # annfile
-        #     train_transform
-        #     )
         train_dataset = CustomDataLoader(
             data_dir=args.train_path, mode='train', transform=train_transform)
-        # collate_fn_func = cp_collate_fn
         collate_fn_func = collate_fn
 
-    val_dataset = CustomDataLoader(
-        data_dir=args.val_path, mode='val', transform=val_transform)
+
 
     # data_loader
     train_loader = DataLoader(
@@ -168,7 +167,6 @@ def train(model_dir, args):
         model.train()
 
         hist = np.zeros((n_classes, n_classes))
-        # figure = None
 
         for i, (images, masks) in enumerate(train_loader):
             images = torch.stack(images)
@@ -214,9 +212,6 @@ def train(model_dir, args):
             hist = add_hist(hist, masks, outputs, n_class=n_classes)
             acc, acc_cls, mIoU, fwavacc, IoU = label_accuracy_score(hist)
 
-            # if figure is None:
-            # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
-            # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
             # step 주기에 따른 loss 출력
             if (i + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
@@ -335,7 +330,6 @@ def check_args(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    # Data and model checkpoints directories
     parser.add_argument('--seed', type=int, default=1004,
                         help='random seed (default: 1004)')
     parser.add_argument('--epochs', type=int, default=10,
@@ -384,9 +378,9 @@ if __name__ == '__main__':
 
     # Container environment
     parser.add_argument('--train_path', type=str, default=os.environ.get(
-        'SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train_all.json'))
+        'SM_CHANNEL_TRAIN', './sample_data/train.json'))
     parser.add_argument('--val_path', type=str, default=os.environ.get(
-        'SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))
+        'SM_CHANNEL_VAL', './sample_data/train.json'))
     parser.add_argument('--model_dir', type=str,
                         default=os.environ.get('SM_MODEL_DIR', './runs'))
 
@@ -397,6 +391,10 @@ if __name__ == '__main__':
                         help='wandb entity name (default: cider6)')
     parser.add_argument('--project', type=str, default='test',
                         help='wandb project name (default: test)')
+
+    # copy paste
+    parser.add_argument('--train_copypaste_path', type=str, default=os.environ.get(
+        'SM_CHANNEL_TRAIN', './sample_data'))
 
     args = parser.parse_args()
 

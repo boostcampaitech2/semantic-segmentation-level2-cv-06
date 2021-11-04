@@ -14,8 +14,11 @@ from datasets.copy_paste import CopyPaste
 from datasets.coco import CocoDetectionCP
 import torch
 
+from datasets.transform_test import RandomAugMix
+
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 dataset_path = './sample_data/'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                   'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
@@ -90,17 +93,14 @@ def make_final_mask(data):
     image = data['image']
     bboxes = data['bboxes']
     masks = data['masks']
-    # print('image shape!!!', image.shape)
 
     category = np.array([b[-2] for b in bboxes])
-    # print('category:', category)
     final_masks = np.zeros((512, 512))
     pmasks = [[m, c] for m, c in zip(masks, category)]
     pmasks = sorted(pmasks, key= lambda x: len(x[0]), reverse=True)
 
     for i in range(len(pmasks)):
         final_masks[pmasks[i][0]==1] = pmasks[i][1]
-        # print('category:',i, pmasks[i][1])
     final_masks = final_masks.astype(np.int8)
     final_masks = torch.tensor(final_masks)
     return image, final_masks
@@ -117,21 +117,23 @@ def cp_collate_fn(batch):
 def collate_fn(batch):
     return tuple(zip(*batch)) 
 
-# train_transform = A.Compose([
-#     ToTensorV2()
-# ])
+
+
+
 train_transform = A.Compose([
     ToTensorV2()
 ])
 
-# train_transform = A.Compose([
-#         # A.RandomScale(scale_limit=(-0.9, 1), p=1), #LargeScaleJitter from scale of 0.1 to 2
-#         # A.PadIfNeeded(512, 512, border_mode=0), #pads with image in the center, not the top left like the paper
-#         # A.RandomCrop(512, 512),
-#         CopyPaste(blend=True, sigma=1, pct_objects_paste=0.4, p=1.), #pct_objects_paste is a guess
-#         ToTensorV2()
-#     ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
-# )
+train_augmix_transform = A.Compose([
+    RandomAugMix(severity=3, width=14, alpha=1., p=1),
+    ToTensorV2()
+])
+
+train_copypaste_transform = A.Compose([
+        CopyPaste(blend=True, sigma=1, pct_objects_paste=0.4, p=1.), #pct_objects_paste is a guess
+        ToTensorV2()
+    ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
+)
 
 val_transform = A.Compose([
     ToTensorV2()
