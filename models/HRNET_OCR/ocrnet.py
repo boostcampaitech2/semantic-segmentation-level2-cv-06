@@ -73,11 +73,10 @@ class OCRNet(nn.Module):
     def __init__(self, num_classes, trunk='hrnetv2'):
         super(OCRNet, self).__init__()
         self.backbone, _, _, high_level_ch = get_trunk(trunk)
-        self.ocr = OCR_block(high_level_ch)
+        self.ocr = OCR_block(high_level_ch, num_classes)
 
     def forward(self, inputs):
-        assert 'images' in inputs
-        x = inputs['images']
+        x = inputs
 
         _, _, high_level_features = self.backbone(x)
         cls_out, aux_out, _ = self.ocr(high_level_features)

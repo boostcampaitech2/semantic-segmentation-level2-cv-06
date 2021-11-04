@@ -18,6 +18,7 @@ from datasets.dataset import CustomDataLoader, train_transform, val_transform, c
 from datasets.coco import CocoDetectionCP
 
 from loss.losses import create_criterion
+from optimizer.optim_sche import get_opt_sche
 from utils import add_hist, grid_image, label_accuracy_score
 #tmp import for testing
 from datasets.transform_test import create_transforms
@@ -138,17 +139,11 @@ def train(model_dir, args):
 
     # loss & optimizer
     criterion = create_criterion(
-        args.criterion,
-        # if weighted cross-entropy
-        # weight=torch.tensor([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]).to(device)
+        args.criterion
         )
 
-    # 여러 옵티마이저 가능하게 수정 필요
-    # optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6)
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
-    
-    #scheduler option
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, [30]) if args.schedule else None
+    # optimizer & scheduler
+    optimizer, scheduler = get_opt_sche(args, model)
 
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
@@ -339,6 +334,19 @@ if __name__ == '__main__':
     parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
     parser.add_argument('--schedule', default=False, help='option for scheduler function')
     parser.add_argument('--copypaste', default=False, help='option for copy_paste')
+
+    # optimizer & scheduler
+    parser.add_argument('--optimizer', type=str, default='adam', help='optimizer type (default: adam)')
+    parser.add_argument('--weight_decay', type=float, default=1e-5, help='weight decay (default: 1e-5)')
+    parser.add_argument('--momentum', type=float, default=0.9, help='momentum (default: 0.9)')
+    parser.add_argument('--amsgrad', action="store_true", help='amsgrad for adam')
+
+    parser.add_argument('--scheduler', type=str, default='lambda', help='scheduler type (default: lambda)')
+    parser.add_argument('--poly_exp', type=float, default=1.0, help='polynomial LR exponent (default: 1.0)')
+    parser.add_argument('--T_max', type=int, default=10, help='cosineannealing T_max (default: 10)')
+    parser.add_argument('--eta_min', type=int, default=0, help='cosineannealing eta_min (default: 0)')
+    parser.add_argument('--step_size', type=int, default=10, help='stepLR step_size (default: 10)')
+    parser.add_argument('--gamma', type=float, default=0.1, help='stepLR gamma (default: 0.1)')
 
     # Container environment
     parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train_all.json'))

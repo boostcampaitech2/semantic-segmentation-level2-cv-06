@@ -7,7 +7,7 @@ import albumentations.augmentations.transforms as trans
 from PIL import Image, ImageOps, ImageEnhance
 from albumentations.core.transforms_interface import ImageOnlyTransform
 
-from copy_paste import CopyPaste
+from datasets.copy_paste import CopyPaste
 
 #taken from: https://www.kaggle.com/bguberfain/elastic-transform-for-data-augmentation
 # Function to distort image
@@ -329,10 +329,10 @@ def is_transform(criterion_name):
     return criterion_name in _transform_entropoints
 
 
-def create_transforms(criterion_name, **kwargs):
+def create_transforms(criterion_name, seed, **kwargs):
     if is_transform(criterion_name):
         create_fn = transform_entrypoint(criterion_name)
-        criterion = create_fn(**kwargs)
+        criterion = create_fn(seed, **kwargs)
     else:
         raise RuntimeError('Unknown loss (%s)' % criterion_name)
     return criterion

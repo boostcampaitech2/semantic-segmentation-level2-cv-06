@@ -9,8 +9,7 @@ import torch
 from datasets.dataset import CustomDataLoader, collate_fn
 from torch.utils.data import DataLoader
 import albumentations as A
-from datasets.transform_test import transform_custom
-
+from datasets.transform_test import create_transforms
 
 @torch.no_grad()
 def inference(model_dir, args):
@@ -20,7 +19,7 @@ def inference(model_dir, args):
 
     if args.custom_trs:
         #override
-        custom = transform_custom(args.seed, p = 0.3)
+        custom = create_transforms(criterion_name = 'transunet', seed = None)
         test_transform = custom.test_transform_img
     else:
         from datasets.dataset import test_transform
@@ -40,10 +39,10 @@ def inference(model_dir, args):
         num_classes=11, pretrained=True
     )
 
-    model_path = os.path.join(model_dir, 'best.pt')
+    model_path = os.path.join(model_dir)
     checkpoint = torch.load(model_path, map_location=device)
-    state_dict = checkpoint.state_dict()
-    model.load_state_dict(state_dict)
+    # state_dict = checkpoint.state_dict()
+    model.load_state_dict(checkpoint)
     model = model.to(device)
         
     size = 256
@@ -102,8 +101,16 @@ if __name__ == '__main__':
     # custom args
     parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
     
+    
 
     args = parser.parse_args()
+
+
+    # debug options: must not commit
+    args.model_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/save_state/transunet_b16_SGD_big_full.pt'
+    args.custom_trs = True
+    args.model = 'TransUnet'
+    # debug end
 
     model_dir = args.model_dir
     output_dir = args.output_dir
