@@ -19,7 +19,7 @@ def inference(model_dir, args):
 
     if args.custom_trs:
         #override
-        custom = create_transforms(criterion_name = 'transunet', seed = None)
+        custom = create_transforms(criterion_name = args.model, seed = None)
         test_transform = custom.test_transform_img
     else:
         from datasets.dataset import test_transform
@@ -36,15 +36,14 @@ def inference(model_dir, args):
 
     model_module = getattr(import_module("models.model"), args.model)
     model = model_module(
-        num_classes=11, pretrained=True
+        num_classes=11, pretrained=False
     )
 
     model_path = os.path.join(model_dir)
-    checkpoint = torch.load(model_path, map_location=device)
-    # state_dict = checkpoint.state_dict()
+    checkpoint = torch.load(model_path, map_location=device) #every model has to be state_dict
     model.load_state_dict(checkpoint)
     model = model.to(device)
-        
+    
     size = 256
     transform = A.Compose([A.Resize(size, size)])
 
@@ -56,7 +55,7 @@ def inference(model_dir, args):
     with torch.no_grad():
         for step, (imgs, image_infos) in enumerate(tqdm(test_loader, leave=False)):
 
-            # inference (512 x 512)
+            # inference
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                 outs = model(torch.stack(imgs).to(device))['out']
                 oms = torch.argmax(outs.squeeze(), dim=1).detach().cpu().numpy()
@@ -94,7 +93,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='FCNRes50', help='model type (default: FCNRes50)')
 
     # Container environment
-    parser.add_argument('--test_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/test.json'))
+    parser.add_argument('--test_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/sample_data/train.json'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model'))
     parser.add_argument('--output_dir', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR', './output'))
 
@@ -106,11 +105,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
-    # debug options: must not commit
-    args.model_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/save_state/transunet_b16_SGD_big_full.pt'
-    args.custom_trs = True
-    args.model = 'TransUnet'
-    # debug end
 
     model_dir = args.model_dir
     output_dir = args.output_dir

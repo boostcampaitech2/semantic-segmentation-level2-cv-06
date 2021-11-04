@@ -20,7 +20,7 @@ from datasets.coco import CocoDetectionCP
 from loss.losses import create_criterion
 from optimizer.optim_sche import get_opt_sche
 from utils.utils import add_hist, grid_image, label_accuracy_score
-#tmp import for testing
+# tmp import for testing
 from datasets.transform_test import create_transforms
 from tqdm import tqdm
 
@@ -71,7 +71,7 @@ def train(model_dir, args):
 
     save_dir = increment_path(os.path.join(model_dir, args.name))
     createDirectory(save_dir)
-    
+
     # settings
     print('pytorch version: {}'.format(torch.__version__))
     print('GPU 사용 가능 여부: {}'.format(torch.cuda.is_available()))
@@ -82,29 +82,37 @@ def train(model_dir, args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # transform selector
-    if args.custom_trs:
-        #override
-        custom = create_transforms(args.custom_trs)
-        train_transform = custom.transform_img
-        val_transform = custom.val_transform_img
-        
+    if args.aug_option:
+        # override
+        custom = create_transforms(args.aug_option, args.seed)
+        train_transform = custom.transform_img()
+        val_transform = custom.val_transform_img()
+
     else:
         from datasets.dataset import train_transform, val_transform
 
     # dataset
-    if args.copypaste:
-        train_dataset = CocoDetectionCP('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # root
-    '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data/train.json', # annfile
-    train_transform)
+    if args.aug_option == 'copy_paste':
+        train_dataset = CocoDetectionCP(
+            '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # image root path
+            args.train_path,  # annfile
+            train_transform
+        )
         collate_fn_func = cp_collate_fn
-    
+
     else:
-        train_dataset = CustomDataLoader(data_dir=args.train_path, mode='train', transform=train_transform)
+        # train_dataset = CocoDetectionCP(
+        #     '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/input/data',  # image root path
+        #     args.train_path, # annfile
+        #     train_transform
+        #     )
+        train_dataset = CustomDataLoader(
+            data_dir=args.train_path, mode='train', transform=train_transform)
+        # collate_fn_func = cp_collate_fn
         collate_fn_func = collate_fn
-    
 
-    val_dataset = CustomDataLoader(data_dir=args.val_path, mode='val', transform=val_transform)
-
+    val_dataset = CustomDataLoader(
+        data_dir=args.val_path, mode='val', transform=val_transform)
 
     # data_loader
     train_loader = DataLoader(
@@ -129,7 +137,7 @@ def train(model_dir, args):
 
     # model
     n_classes = 11
-    
+
     model_module = getattr(import_module("models.model"), args.model)
     model = model_module(
         num_classes=n_classes, pretrained=True
@@ -140,7 +148,7 @@ def train(model_dir, args):
     # loss & optimizer
     criterion = create_criterion(
         args.criterion
-        )
+    )
 
     # optimizer & scheduler
     optimizer, scheduler = get_opt_sche(args, model)
@@ -158,7 +166,7 @@ def train(model_dir, args):
 
         # train loop
         model.train()
-        
+
         hist = np.zeros((n_classes, n_classes))
         # figure = None
 
@@ -169,7 +177,7 @@ def train(model_dir, args):
             # gpu device 할당
             images, masks = images.to(device), masks.to(device)
             model = model.to(device)
-            
+
             # inference
             if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                 outputs = model(images)['out']
@@ -186,7 +194,8 @@ def train(model_dir, args):
                     main_loss = criterion(outputs['pred'], masks, do_rmi=True)
 
                 loss = 0.4 * aux_loss + main_loss
-                outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
+                outputs = torch.argmax(
+                    outputs['pred'], dim=1).detach().cpu().numpy()
 
             elif args.model in ('TransUnet'):
                 loss = model.get_loss(outputs, masks)
@@ -206,8 +215,8 @@ def train(model_dir, args):
             acc, acc_cls, mIoU, fwavacc, IoU = label_accuracy_score(hist)
 
             # if figure is None:
-                # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
-                # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
+            # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
+            # figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
             # step 주기에 따른 loss 출력
             if (i + 1) % args.log_interval == 0:
                 current_lr = get_lr(optimizer)
@@ -224,7 +233,7 @@ def train(model_dir, args):
                         "Train/Train mIoU": round(mIoU.item(), 4),
                         "Train/Train acc": round(acc.item(), 4),
                         "learning_rate": current_lr
-                        },
+                    },
                         step=step)
             step += 1
 
@@ -245,7 +254,7 @@ def train(model_dir, args):
                 # gpu device 할당
                 images, masks = images.to(device), masks.to(device)
                 model = model.to(device)
-                
+
                 # inference
                 if args.model in ('FCNRes50', 'FCNRes101', 'DeepLabV3_Res50', 'DeepLabV3_Res101'):
                     outputs = model(images)['out']
@@ -258,27 +267,32 @@ def train(model_dir, args):
                     main_loss = criterion(outputs['pred'], masks, do_rmi=False)
                     loss = 0.4 * aux_loss + main_loss
                     loss = loss.mean()
-                    outputs = torch.argmax(outputs['pred'], dim=1).detach().cpu().numpy()
-                    
+                    outputs = torch.argmax(
+                        outputs['pred'], dim=1).detach().cpu().numpy()
+
                 elif args.model in ('TransUnet'):
                     loss = model.get_loss(outputs, masks)
-                    outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
+                    outputs = torch.argmax(
+                        outputs, dim=1).detach().cpu().numpy()
                 else:
                     loss = criterion(outputs, masks)
-                    outputs = torch.argmax(outputs, dim=1).detach().cpu().numpy()
+                    outputs = torch.argmax(
+                        outputs, dim=1).detach().cpu().numpy()
 
                 total_loss += loss
                 cnt += 1
 
                 masks = masks.detach().cpu().numpy()
-                
+
                 hist = add_hist(hist, masks, outputs, n_class=n_classes)
 
                 if figure is None:
-                    figure = grid_image(images.detach().cpu().permute(0, 2, 3, 1).numpy(), masks, outputs)
+                    figure = grid_image(images.detach().cpu().permute(
+                        0, 2, 3, 1).numpy(), masks, outputs)
 
             acc, acc_cls, mIoU, fwavacc, IoU = label_accuracy_score(hist)
-            IoU_by_class = [{classes : round(IoU, 4)} for IoU, classes in zip(IoU, category_names)]
+            IoU_by_class = [{classes: round(IoU, 4)}
+                            for IoU, classes in zip(IoU, category_names)]
 
             avg_loss = total_loss / cnt
             print(f"[Val] Average Loss : {round(avg_loss.item(), 4)}, Accuracy : {round(acc, 4)} || "
@@ -289,10 +303,10 @@ def train(model_dir, args):
                 best_val_mIoU = mIoU
                 print(f"Best performance {best_val_mIoU} at Epoch {epoch+1}")
 
-                torch.save(model, f"{save_dir}/best.pt")
+                torch.save(model.state_dict(), f"{save_dir}/best.pt")
                 print(f"Save best model in {save_dir}")
-            
-            torch.save(model, f"{save_dir}/last.pt")
+
+            torch.save(model.state_dict(), f"{save_dir}/last.pt")
 
             # wandb log
             if args.wandb == True:
@@ -305,55 +319,84 @@ def train(model_dir, args):
                     "Metric/Paper_pack_IoU": IoU_by_class[3]['Paper pack'], "Metric/Metal_IoU": IoU_by_class[4]['Metal'], "Metric/Glass_IoU": IoU_by_class[5]['Glass'],
                     "Metric/Plastic_IoU": IoU_by_class[6]['Plastic'], "Metric/Styrofoam_IoU": IoU_by_class[7]['Styrofoam'], "Metric/Plastic_bag_IoU": IoU_by_class[8]['Plastic bag'],
                     "Metric/Battery_IoU": IoU_by_class[9]['Battery'], "Metric/Clothing_IoU": IoU_by_class[10]['Clothing']
-                    },
+                },
                     step=step)
             print()
         scheduler.step()
 
+
 def check_args(args):
     if (args.model in ('OCRNet', 'MscaleOCRNet')) & (args.criterion in ('cross_entropy')):
-        raise Exception(f"not match error model and criterion. {args.model}, {args.criterion}")
+        raise Exception(
+            f"not match error model and criterion. {args.model}, {args.criterion}")
     return True
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Data and model checkpoints directories
-    parser.add_argument('--seed', type=int, default=1004, help='random seed (default: 1004)')
-    parser.add_argument('--epochs', type=int, default=10, help='number of epochs to train (default: 10)')
-    parser.add_argument('--batch_size', type=int, default=16, help='input batch size for training (default: 16)')
-    parser.add_argument('--workers', type=int, default=1, help='number of workers for training (default: 1)')
-    parser.add_argument('--model', type=str, default='FCNRes50', help='model type (default: FCNRes50)')
-    parser.add_argument('--lr', type=float, default=1e-4, help='learning rate (default: 1e-4)')
-    parser.add_argument('--criterion', type=str, default='cross_entropy', help='criterion type (default: cross_entropy)')
-    parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
-    parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
-    parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
-    parser.add_argument('--schedule', default=False, help='option for scheduler function')
-    parser.add_argument('--copypaste', default=False, help='option for copy_paste')
+    parser.add_argument('--seed', type=int, default=1004,
+                        help='random seed (default: 1004)')
+    parser.add_argument('--epochs', type=int, default=10,
+                        help='number of epochs to train (default: 10)')
+    parser.add_argument('--batch_size', type=int, default=2,
+                        help='input batch size for training (default: 2)')
+    parser.add_argument('--workers', type=int, default=1,
+                        help='number of workers for training (default: 1)')
+    parser.add_argument('--model', type=str, default='FCNRes50',
+                        help='model type (default: FCNRes50)')
+    parser.add_argument('--lr', type=float, default=1e-4,
+                        help='learning rate (default: 1e-4)')
+    parser.add_argument('--criterion', type=str, default='cross_entropy',
+                        help='criterion type (default: cross_entropy)')
+    parser.add_argument('--log_interval', type=int, default=20,
+                        help='how many batches to wait before logging training status')
+    parser.add_argument('--name', default='exp',
+                        help='model save at {SM_MODEL_DIR}/{name}')
+    parser.add_argument('--aug_option', default=False,
+                        help='option for custom transform function')
+    parser.add_argument('--schedule', default=False,
+                        help='option for scheduler function')
 
     # optimizer & scheduler
-    parser.add_argument('--optimizer', type=str, default='adam', help='optimizer type (default: adam)')
-    parser.add_argument('--weight_decay', type=float, default=1e-5, help='weight decay (default: 1e-5)')
-    parser.add_argument('--momentum', type=float, default=0.9, help='momentum (default: 0.9)')
-    parser.add_argument('--amsgrad', action="store_true", help='amsgrad for adam')
+    parser.add_argument('--optimizer', type=str, default='adam',
+                        help='optimizer type (default: adam)')
+    parser.add_argument('--weight_decay', type=float,
+                        default=1e-5, help='weight decay (default: 1e-5)')
+    parser.add_argument('--momentum', type=float,
+                        default=0.9, help='momentum (default: 0.9)')
+    parser.add_argument('--amsgrad', action="store_true",
+                        help='amsgrad for adam')
 
-    parser.add_argument('--scheduler', type=str, default='lambda', help='scheduler type (default: lambda)')
-    parser.add_argument('--poly_exp', type=float, default=1.0, help='polynomial LR exponent (default: 1.0)')
-    parser.add_argument('--T_max', type=int, default=10, help='cosineannealing T_max (default: 10)')
-    parser.add_argument('--eta_min', type=int, default=0, help='cosineannealing eta_min (default: 0)')
-    parser.add_argument('--step_size', type=int, default=10, help='stepLR step_size (default: 10)')
-    parser.add_argument('--gamma', type=float, default=0.1, help='stepLR gamma (default: 0.1)')
+    parser.add_argument('--scheduler', type=str, default='lambda',
+                        help='scheduler type (default: lambda)')
+    parser.add_argument('--poly_exp', type=float, default=1.0,
+                        help='polynomial LR exponent (default: 1.0)')
+    parser.add_argument('--T_max', type=int, default=10,
+                        help='cosineannealing T_max (default: 10)')
+    parser.add_argument('--eta_min', type=int, default=0,
+                        help='cosineannealing eta_min (default: 0)')
+    parser.add_argument('--step_size', type=int, default=10,
+                        help='stepLR step_size (default: 10)')
+    parser.add_argument('--gamma', type=float, default=0.1,
+                        help='stepLR gamma (default: 0.1)')
 
     # Container environment
-    parser.add_argument('--train_path', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train_all.json'))
-    parser.add_argument('--val_path', type=str, default=os.environ.get('SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))
-    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './runs'))
+    parser.add_argument('--train_path', type=str, default=os.environ.get(
+        'SM_CHANNEL_TRAIN', '/opt/ml/segmentation/input/data/train_all.json'))
+    parser.add_argument('--val_path', type=str, default=os.environ.get(
+        'SM_CHANNEL_VAL', '/opt/ml/segmentation/input/data/val.json'))
+    parser.add_argument('--model_dir', type=str,
+                        default=os.environ.get('SM_MODEL_DIR', './runs'))
 
     # wandb
-    parser.add_argument('--wandb', action="store_true", help='wandb implement or not')
-    parser.add_argument('--entity', type=str, default='cider6', help='wandb entity name (default: cider6)')
-    parser.add_argument('--project', type=str, default='test', help='wandb project name (default: test)')
+    parser.add_argument('--wandb', action="store_true",
+                        help='wandb implement or not')
+    parser.add_argument('--entity', type=str, default='cider6',
+                        help='wandb entity name (default: cider6)')
+    parser.add_argument('--project', type=str, default='test',
+                        help='wandb project name (default: test)')
 
     args = parser.parse_args()
 
@@ -365,7 +408,7 @@ if __name__ == '__main__':
         wandb.init(entity=args.entity, project=args.project)
         wandb.run.name = args.name
         wandb.config.update(args)
-        
+
     model_dir = args.model_dir
 
     train(model_dir, args)
