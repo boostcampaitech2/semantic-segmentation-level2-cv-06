@@ -1,9 +1,3 @@
-# .ipybb checkpoints
-**/.ipynb_checkpoints/
-
-# pretrained model
-*.pth
-
 # Byte-compiled
 __pycache__/
 
@@ -15,6 +9,7 @@ baseline_code/
 
 # output
 model/
+runs/
 output/
 
 # wandb
@@ -22,3 +17,23 @@ wandb/
 
 # input 심볼릭 링크로 현재 디렉토리에 불러와서 사용
 input
+
+
+# personal
+personal/
+example.ipynb
+*.ipynb
+*.pickle
+EDA/
+checking_image.py
+
+# weights
+weights/
+*.pth
+*.pt
+
+# system
+.ipynb_*/
+
+#result
+*.out
