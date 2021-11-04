@@ -74,12 +74,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
-    # # debug options: must not commit
-    # args.model_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/runs/transunet_b16_SGD_big_full/best.pt'
-    # args.save_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/save_state/transunet_b16_SGD_big_full.pt'
-    # args.custom_trs = True
-    # args.model = 'TransUnet'
-    # # debug end
 
     model_dir = args.model_dir
     os.makedirs('/opt/ml/segmentation/semantic-segmentation-level2-cv-06/save_state/', exist_ok=True)

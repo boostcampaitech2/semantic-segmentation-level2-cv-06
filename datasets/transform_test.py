@@ -48,7 +48,7 @@ def elastic_transform(image, mask, seed):
 
 
 class transform_transunet():
-    def __init__(self, seed, p=0.5, scale = None):
+    def __init__(self, seed, p=0.5, scale = 2):
 
         assert 0<=p<=1
 
@@ -315,7 +315,7 @@ class transform_copypaste():
 
 ##모든 코드는 이 줄 위에 써주세요
 _transform_entropoints = {
-    'transunet': transform_transunet,
+    'TransUnet': transform_transunet,
     'augmix' : transform_augmix,
     'copy_paste' : transform_copypaste
 }
@@ -334,5 +334,5 @@ def create_transforms(criterion_name, seed, **kwargs):
         create_fn = transform_entrypoint(criterion_name)
         criterion = create_fn(seed, **kwargs)
     else:
-        raise RuntimeError('Unknown loss (%s)' % criterion_name)
+        raise RuntimeError('Unknown transform (%s)' % criterion_name)
     return criterion
