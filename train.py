@@ -19,7 +19,7 @@ from datasets.coco import CocoDetectionCP
 
 from loss.losses import create_criterion
 from optimizer.optim_sche import get_opt_sche
-from utils import add_hist, grid_image, label_accuracy_score
+from utils.utils import add_hist, grid_image, label_accuracy_score
 #tmp import for testing
 from datasets.transform_test import create_transforms
 from tqdm import tqdm
@@ -198,9 +198,6 @@ def train(model_dir, args):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            #test
-            if scheduler:
-                scheduler.step(epoch)
 
             # 데이터 검증
             masks = masks.detach().cpu().numpy()
@@ -229,7 +226,6 @@ def train(model_dir, args):
                         "learning_rate": current_lr
                         },
                         step=step)
-
             step += 1
 
         # val loop
@@ -312,9 +308,10 @@ def train(model_dir, args):
                     },
                     step=step)
             print()
+        scheduler.step()
 
 def check_args(args):
-    if (args.model in ('OCRNet', 'MscaleOCRNet')) ^ (args.criterion in ('rmi', 'smooth', 'dice')):
+    if (args.model in ('OCRNet', 'MscaleOCRNet')) & (args.criterion in ('cross_entropy')):
         raise Exception(f"not match error model and criterion. {args.model}, {args.criterion}")
     return True
 
@@ -354,20 +351,13 @@ if __name__ == '__main__':
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './runs'))
 
     # wandb
-    parser.add_argument('--wandb', type=bool, default=False, help='wandb implement or not (default: False)')
+    parser.add_argument('--wandb', action="store_true", help='wandb implement or not')
     parser.add_argument('--entity', type=str, default='cider6', help='wandb entity name (default: cider6)')
     parser.add_argument('--project', type=str, default='test', help='wandb project name (default: test)')
 
     args = parser.parse_args()
-    
-    #test script for debugging. must not commit
-    # args.custom_trs = True
-    # args.model = 'TransUnet'
-    # args.batch_size = 4
-    # args.schedule = True
-    # args.lr = 0.001
 
-    # check_args(args)  #test null
+    check_args(args)
     print(args)
 
     # wandb init
