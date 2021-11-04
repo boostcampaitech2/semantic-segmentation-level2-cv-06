@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
-
-from models.HRNET_OCR.ocrnet_utils import initialize_weights, Upsample, scale_as, ResizeX
-from models.HRNET_OCR.ocrnet_utils import get_trunk, BNReLU, make_attn_head
-from models.HRNET_OCR.ocrnet_utils import SpatialGather_Module, SpatialOCR_Module
-from models.HRNET_OCR.ocrnet_utils import fmt_scale
+from models.HRNET_OCR.ocrnet_utils import (BNReLU, ResizeX,
+                                           SpatialGather_Module,
+                                           SpatialOCR_Module, Upsample,
+                                           fmt_scale, get_trunk,
+                                           initialize_weights, make_attn_head,
+                                           scale_as)
 
 INIT_DECODER = False
 MID_CHANNELS = 512
@@ -83,7 +84,8 @@ class OCRNet(nn.Module):
         aux_out = scale_as(aux_out, x)
         cls_out = scale_as(cls_out, x)
 
-        output_dict = {'pred': cls_out}
+        output_dict = {'pred': cls_out,
+                       'aux': aux_out}
         return output_dict
 
 
