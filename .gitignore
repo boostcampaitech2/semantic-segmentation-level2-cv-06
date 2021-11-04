@@ -1,4 +1,5 @@
-
+*.json
+*.pt
 *.out
 
 # .ipybb checkpoints
