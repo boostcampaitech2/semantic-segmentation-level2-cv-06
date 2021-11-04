@@ -238,7 +238,7 @@ def train(model_dir, args):
             figure = None
 
             hist = np.zeros((n_classes, n_classes))
-            for images, masks, _ in tqdm(val_loader, leave=False):
+            for images, masks in tqdm(val_loader, leave=False):
                 images = torch.stack(images)
                 masks = torch.stack(masks).long()
 
@@ -322,7 +322,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=1004, help='random seed (default: 1004)')
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs to train (default: 10)')
     parser.add_argument('--batch_size', type=int, default=16, help='input batch size for training (default: 16)')
-    parser.add_argument('--workers', type=int, default=4, help='number of workers for training (default: 4)')
+    parser.add_argument('--workers', type=int, default=1, help='number of workers for training (default: 1)')
     parser.add_argument('--model', type=str, default='FCNRes50', help='model type (default: FCNRes50)')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate (default: 1e-4)')
     parser.add_argument('--criterion', type=str, default='cross_entropy', help='criterion type (default: cross_entropy)')

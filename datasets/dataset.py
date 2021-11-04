@@ -14,7 +14,9 @@ from datasets.copy_paste import CopyPaste
 from datasets.coco import CocoDetectionCP
 import torch
 
-dataset_path = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/sample_data/'
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+dataset_path = './sample_data/'
 category_names = ['Background', 'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
                   'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing']
 
