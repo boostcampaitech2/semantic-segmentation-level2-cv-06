@@ -117,7 +117,7 @@ class DeepLabV3(nn.Module):
 
 
 class DeepLabV3_Plus(nn.Module):
-    def __init__(self, encoder='efficientnet-b0', weights='imagenet', num_classes=11, pretrained=True):
+    def __init__(self, encoder='efficientnet-b7', weights='imagenet', num_classes=11, pretrained=True):
         super().__init__()
         self.model = smp.DeepLabV3Plus(
             encoder_name=encoder,       # choose encoder, e.g. mobilenet_v2 or efficientnet-b7

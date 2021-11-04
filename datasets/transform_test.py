@@ -9,8 +9,10 @@ from albumentations.core.transforms_interface import ImageOnlyTransform
 
 from datasets.copy_paste import CopyPaste
 
-#taken from: https://www.kaggle.com/bguberfain/elastic-transform-for-data-augmentation
+# taken from: https://www.kaggle.com/bguberfain/elastic-transform-for-data-augmentation
 # Function to distort image
+
+
 def elastic_transform(image, mask, seed):
     """Elastic deformation of images as described in [Simard2003]_ (with modifications).
     .. [Simard2003] Simard, Steinkraus and Platt, "Best Practices for
@@ -20,45 +22,53 @@ def elastic_transform(image, mask, seed):
 
      Based on https://gist.github.com/erniejunior/601cdf56d2b424757de5
     """
-    alpha, sigma, alpha_affine = image.shape[1] * 6, image.shape[1] * 0.2, image.shape[1] * 0.2
-    image = np.concatenate((image, mask[...,None]), axis=2)
+    alpha, sigma, alpha_affine = image.shape[1] * \
+        6, image.shape[1] * 0.2, image.shape[1] * 0.2
+    image = np.concatenate((image, mask[..., None]), axis=2)
     random_state = np.random.RandomState(seed)
     shape = image.shape
     shape_size = shape[:2]
-    
+
     # Random affine
     center_square = np.float32(shape_size) // 2
     square_size = min(shape_size) // 3
-    pts1 = np.float32([center_square + square_size, [center_square[0]+square_size, center_square[1]-square_size], center_square - square_size])
-    pts2 = pts1 + random_state.uniform(-alpha_affine, alpha_affine, size=pts1.shape).astype(np.float32)
+    pts1 = np.float32([center_square + square_size, [center_square[0]+square_size,
+                      center_square[1]-square_size], center_square - square_size])
+    pts2 = pts1 + random_state.uniform(-alpha_affine,
+                                       alpha_affine, size=pts1.shape).astype(np.float32)
     M = cv2.getAffineTransform(pts1, pts2)
-    image = cv2.warpAffine(image, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)
+    image = cv2.warpAffine(
+        image, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)
 
     image, mask = image[..., 0:3], image[..., 3].astype(np.int8)
-    
+
     dx = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
     dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
 
-    x, y, z = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]), np.arange(shape[2]))
-    indices = np.reshape(y+dy, (-1, 1)), np.reshape(x+dx, (-1, 1)), np.reshape(z, (-1, 1))
-    im_merge_t = map_coordinates(image, indices, order=1, mode='reflect').reshape(shape)
+    x, y, z = np.meshgrid(np.arange(shape[1]), np.arange(
+        shape[0]), np.arange(shape[2]))
+    indices = np.reshape(y+dy, (-1, 1)), np.reshape(x+dx,
+                                                    (-1, 1)), np.reshape(z, (-1, 1))
+    im_merge_t = map_coordinates(
+        image, indices, order=1, mode='reflect').reshape(shape)
     # im_t = im_merge_t[...,0:3]
     # im_mask_t = im_merge_t[...,3].astype(np.int8)
     return im_merge_t, mask
 
 
 class transform_transunet():
-    def __init__(self, seed, p=0.5, scale = None):
+    def __init__(self, seed, p=0.5, scale=None):
 
-        assert 0<=p<=1
+        assert 0 <= p <= 1
 
         self.scale = scale if scale else 1
         self.elastic = elastic_transform
         self.transform = A.Compose([
             trans.Blur(p=p),
-            trans.ToGray(p = p),
-            A.ShiftScaleRotate(rotate_limit=15, p=p, border_mode=cv2.BORDER_CONSTANT),
-            A.HorizontalFlip(p = p),
+            trans.ToGray(p=p),
+            A.ShiftScaleRotate(rotate_limit=15, p=p,
+                               border_mode=cv2.BORDER_CONSTANT),
+            A.HorizontalFlip(p=p),
             A.Normalize(),
             A.pytorch.ToTensorV2()
         ])
@@ -68,18 +78,20 @@ class transform_transunet():
         ])
         self.p = p
         self.seed = seed
-    
+
     def transform_img(self, image, mask):
-        image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+        image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale,
+                           interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
         return self.transform(image=image, mask=mask)
 
-
     def val_transform_img(self, image, mask):
-        image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+        image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale,
+                           interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
         return self.norm_totensor(image=image, mask=mask)
 
     def test_transform_img(self, image):
-        image = cv2.resize(image, (0,0), fx =self.scale, fy =self.scale, interpolation=cv2.INTER_LINEAR).astype(np.float32)
+        image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale,
+                           interpolation=cv2.INTER_LINEAR).astype(np.float32)
         return self.norm_totensor(image=image)
 
 
@@ -141,8 +153,8 @@ def shear_x(pil_img, level):
     if np.random.uniform() > 0.5:
         level = -level
     return pil_img.transform(pil_img.size,
-                           Image.AFFINE, (1, level, 0, 0, 1, 0),
-                           resample=Image.BILINEAR)
+                             Image.AFFINE, (1, level, 0, 0, 1, 0),
+                             resample=Image.BILINEAR)
 
 
 def shear_y(pil_img, level):
@@ -150,8 +162,8 @@ def shear_y(pil_img, level):
     if np.random.uniform() > 0.5:
         level = -level
     return pil_img.transform(pil_img.size,
-                           Image.AFFINE, (1, 0, 0, level, 1, 0),
-                           resample=Image.BILINEAR)
+                             Image.AFFINE, (1, 0, 0, level, 1, 0),
+                             resample=Image.BILINEAR)
 
 
 def translate_x(pil_img, level):
@@ -159,8 +171,8 @@ def translate_x(pil_img, level):
     if np.random.random() > 0.5:
         level = -level
     return pil_img.transform(pil_img.size,
-                           Image.AFFINE, (1, 0, level, 0, 1, 0),
-                           resample=Image.BILINEAR)
+                             Image.AFFINE, (1, 0, level, 0, 1, 0),
+                             resample=Image.BILINEAR)
 
 
 def translate_y(pil_img, level):
@@ -168,8 +180,8 @@ def translate_y(pil_img, level):
     if np.random.random() > 0.5:
         level = -level
     return pil_img.transform(pil_img.size,
-                           Image.AFFINE, (1, 0, 0, 0, 1, level),
-                           resample=Image.BILINEAR)
+                             Image.AFFINE, (1, 0, 0, 0, 1, level),
+                             resample=Image.BILINEAR)
 
 
 # operation that overlaps with ImageNet-C's test set
@@ -197,17 +209,18 @@ def sharpness(pil_img, level):
 
 
 augmentations = [
-    autocontrast, equalize, posterize, solarize, 
+    autocontrast, equalize, posterize, solarize,
     rotate, shear_x, shear_y,
     translate_x, translate_y
 ]
 
 augmentations_all = [
-    autocontrast, equalize, posterize, solarize, 
+    autocontrast, equalize, posterize, solarize,
     rotate, shear_x, shear_y,
-    translate_x, translate_y, 
+    translate_x, translate_y,
     color, contrast, brightness, sharpness
 ]
+
 
 def normalize(image):
     """Normalize input image channel-wise to zero mean and unit variance."""
@@ -217,7 +230,7 @@ def normalize(image):
 def apply_op(image, op, severity):
     image = image * 255
     image = image.astype(np.uint8)
-    
+
     pil_img = Image.fromarray(image)  # Convert to PIL.Image
     pil_img = op(pil_img, severity)
 
@@ -237,7 +250,7 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
     mixed: Augmented and mixed image.
     """
     ws = np.float32(
-      np.random.dirichlet([alpha] * width))
+        np.random.dirichlet([alpha] * width))
     m = np.float32(np.random.beta(alpha, alpha))
 
     mix = np.zeros_like(image).astype(np.float32)
@@ -251,7 +264,7 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
         mix += ws[i] * image_aug
 
     mixed = m * (image * 255) + (1 - m) * mix
-    return mixed  / 255
+    return mixed / 255
 
 
 class RandomAugMix(ImageOnlyTransform):
@@ -274,16 +287,16 @@ class RandomAugMix(ImageOnlyTransform):
 
 
 class transform_augmix():
-    def __init__(self, seed, p=0.5, scale = None):
+    def __init__(self, seed, p=0.5, scale=None):
         self.transform = A.Compose([
             RandomAugMix(severity=3, width=14, alpha=1., p=1),
             A.pytorch.ToTensorV2()
         ])
 
         self.to_tensor = A.Compose([A.pytorch.ToTensorV2()])
+
     def transform_img(self, image, mask):
         return self.transform(image=image, mask=mask)
-
 
     def val_transform_img(self, image, mask):
         return self.to_tensor(image=image, mask=mask)
@@ -293,31 +306,37 @@ class transform_augmix():
 
 
 class transform_copypaste():
-    def __init__(self, seed, p=0.5, scale = None):
+    def __init__(self, seed, p=0.5, scale=None):
         self.transform = A.Compose([
-        # A.RandomScale(scale_limit=(-0.9, 1), p=1), #LargeScaleJitter from scale of 0.1 to 2
-        # A.PadIfNeeded(512, 512, border_mode=0), #pads with image in the center, not the top left like the paper
-        # A.RandomCrop(512, 512),
-        CopyPaste(blend=True, sigma=1, pct_objects_paste=0.4, p=1.), #pct_objects_paste is a guess
-        A.pytorch.ToTensorV2()], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
+            # A.RandomScale(scale_limit=(-0.9, 1), p=1), #LargeScaleJitter from scale of 0.1 to 2
+            # A.PadIfNeeded(512, 512, border_mode=0), #pads with image in the center, not the top left like the paper
+            # A.RandomCrop(512, 512),
+            CopyPaste(blend=True, sigma=1, pct_objects_paste=0.4,
+                      p=1.),  # pct_objects_paste is a guess
+            A.pytorch.ToTensorV2()], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
         )
 
         self.to_tensor = A.Compose([A.pytorch.ToTensorV2()])
-    def transform_img(self, image, mask):
-        return self.transform(image=image, mask=mask)
 
-    def val_transform_img(self, image, mask):
-        return self.to_tensor(image=image, mask=mask)
+    # def transform_img(self, image, mask):
+        # return self.transform(image=image, mask=mask)
+    def transform_img(self):
+        return self.transform
+
+    # def val_transform_img(self, image, mask):
+        # return self.to_tensor(image=image, mask=mask)
+    def val_transform_img(self):
+        return self.to_tensor
 
     def test_transform_img(self, image):
         return self.to_tensor(image=image)
 
 
-##모든 코드는 이 줄 위에 써주세요
+# 모든 코드는 이 줄 위에 써주세요
 _transform_entropoints = {
     'transunet': transform_transunet,
-    'augmix' : transform_augmix,
-    'copy_paste' : transform_copypaste
+    'augmix': transform_augmix,
+    'copy_paste': transform_copypaste
 }
 
 

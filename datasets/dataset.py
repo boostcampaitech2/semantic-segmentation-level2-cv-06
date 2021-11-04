@@ -124,14 +124,14 @@ train_transform = A.Compose([
     ToTensorV2()
 ])
 
-cp_train_transform = A.Compose([
-        # A.RandomScale(scale_limit=(-0.9, 1), p=1), #LargeScaleJitter from scale of 0.1 to 2
-        # A.PadIfNeeded(512, 512, border_mode=0), #pads with image in the center, not the top left like the paper
-        # A.RandomCrop(512, 512),
-        CopyPaste(blend=True, sigma=1, pct_objects_paste=0.4, p=1.), #pct_objects_paste is a guess
-        ToTensorV2()
-    ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
-)
+# train_transform = A.Compose([
+#         # A.RandomScale(scale_limit=(-0.9, 1), p=1), #LargeScaleJitter from scale of 0.1 to 2
+#         # A.PadIfNeeded(512, 512, border_mode=0), #pads with image in the center, not the top left like the paper
+#         # A.RandomCrop(512, 512),
+#         CopyPaste(blend=True, sigma=1, pct_objects_paste=0.4, p=1.), #pct_objects_paste is a guess
+#         ToTensorV2()
+#     ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
+# )
 
 val_transform = A.Compose([
     ToTensorV2()
