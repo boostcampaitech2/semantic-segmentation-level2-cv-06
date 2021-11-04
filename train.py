@@ -380,7 +380,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_path', type=str, default=os.environ.get(
         'SM_CHANNEL_TRAIN', './sample_data/train.json'))
     parser.add_argument('--val_path', type=str, default=os.environ.get(
-        'SM_CHANNEL_VAL', './sample_data/train.json'))
+        'SM_CHANNEL_VAL', './sample_data/val.json'))
     parser.add_argument('--model_dir', type=str,
                         default=os.environ.get('SM_MODEL_DIR', './runs'))
 
