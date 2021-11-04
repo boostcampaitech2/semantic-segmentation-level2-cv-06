@@ -41,8 +41,8 @@ def inference(model_dir, args):
 
     model_path = os.path.join(model_dir)
     checkpoint = torch.load(model_path, map_location=device)
-    state_dict = checkpoint.state_dict()
-    model.load_state_dict(state_dict)
+    # state_dict = checkpoint.state_dict()
+    model.load_state_dict(checkpoint)
     model = model.to(device)
         
     size = 256
@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
 
     # debug options: must not commit
-    args.model_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/runs/transunet_b16_SGD_big_full/best.pt'
+    args.model_dir = '/opt/ml/segmentation/semantic-segmentation-level2-cv-06/save_state/transunet_b16_SGD_big_full.pt'
     args.custom_trs = True
     args.model = 'TransUnet'
     # debug end
