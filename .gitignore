@@ -36,3 +36,5 @@ weights/
 
 #result
 *.out
+
+*.pt
