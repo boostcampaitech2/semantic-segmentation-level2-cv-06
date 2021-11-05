@@ -1,8 +1,5 @@
-# semantic-segmentation-level2-cv-06
-semantic-segmentation-level2-cv-06 created by GitHub Classroom
-
-# 칠성사이다
-![image](https://user-images.githubusercontent.com/20790778/137433985-622be56d-82eb-4dd7-bbec-c7079b0bf059.png)
+# ✨칠성사이다✨
+<img src="https://user-images.githubusercontent.com/20790778/137433985-622be56d-82eb-4dd7-bbec-c7079b0bf059.png" width=700 height=393 />
 
 | [강지우](https://github.com/jiwoo0212) | [곽지윤](https://github.com/kwakjeeyoon) | [서지유](https://github.com/JiyouSeo) | [송나은](https://github.com/sne12345) | [오재환](https://github.com/jaehwan-AI) | [이준혁](https://github.com/kmouleejunhyuk) | [전경재](https://github.com/ppskj178) |
 | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
@@ -20,7 +17,8 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 <br /><br />
 
 ## Project Roadmap
-![image](https://user-images.githubusercontent.com/68782183/140488837-d502e81b-b64d-4829-ae40-bd77ea45c956.png)
+<!-- ![0001](https://user-images.githubusercontent.com/68782183/140489733-83112ac8-65bb-4fa7-b4d1-dbf1198583d3.jpg) -->
+<img src="https://user-images.githubusercontent.com/68782183/140489733-83112ac8-65bb-4fa7-b4d1-dbf1198583d3.jpg" width=700 height=393 />
 
 ## contents
 ```
@@ -105,9 +103,9 @@ for ensemble, please reffer to `ensemble.ipynb`
 
 
 ## reference
-https://github.com/NVIDIA/semantic-segmentation
+[Hierarchical Multi-Scale Attention for Semantic Segmentation](https://github.com/NVIDIA/semantic-segmentation)
 
-https://github.com/conradry/copy-paste-aug
+[Copy Paste](https://github.com/conradry/copy-paste-aug)
 
-https://github.com/Beckschen/TransUNet
+[TransUNet](https://github.com/Beckschen/TransUNet)
 
