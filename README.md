@@ -13,8 +13,6 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 - 목적: 사진에서 쓰레기를 Segmentation 하는 모델 제작
 - Dataset: 일반 쓰레기, 플라스틱, 종이, 유리 등 11 종류의 쓰레기가 찍힌 사진 데이터셋 4091여장(train 2617장, valid : 665장, test : 819장)
 - 평가 metric: mean Intersection over Union(mIOU) on test dataset
-<img src="https://user-images.githubusercontent.com/51853700/140482768-c07af3b0-0f76-437f-8f4d-54a4bffd2b96.png"  width="400" height="400"/>
-
 
 ## contents
 ```
@@ -68,7 +66,7 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
   - Public : 0.52, private : 0.579
   - **OCRNet + Augmix -** [weight download](https://drive.google.com/drive/folders/1Ouy1AaO4ZVQ1IvMJJwhJP7XM_aVq_w5-)
 - ./runs/DeepLabv3_efficientb7_copypaste.pt
-  - Public : 0.603, private : 0.621
+  - Public : 0.599, private : 0.583
   - **DeepLabV3 + copypaste -** [weight download](https://drive.google.com/drive/folders/1z3ribIiZ8on-v624r2j0TN5ihx4M67ro)
 - Ensemble (TransUNet+DeepLabV3)
   - Public : 0.661, private : 0.707
@@ -79,13 +77,10 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 `pip install requirement.txt`
 
 ### Train
-`python train.py --model MscaleOCRNet --batch_size 10 --wandb True --custom_trs True`  
-`--model DeepLabV3`  
-`--model TransUnet`  
+
 ### Inference
-`python inference.py`  
+
 ### ensemble
-for ensemble, please reffer to `ensemble.ipynb`
 
 
 ## reference
