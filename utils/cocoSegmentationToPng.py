@@ -1,3 +1,5 @@
+# json 파일을 읽어 mask를 png 이미지 형태로 바꿔주는 프로그램
+
 import os
 from pycocotools import mask
 # from pycocotools.cocostuffhelper import cocoSegmentationToPng

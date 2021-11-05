@@ -1,3 +1,5 @@
+# anno 정렬 방식에 따라 두가지 방식의 마스크의 차이점을 시각화 해주는 프로그램
+
 import json
 import os
 import warnings

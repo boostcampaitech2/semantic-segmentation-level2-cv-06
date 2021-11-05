@@ -1,3 +1,5 @@
+# HRNet-Semantic-Segmentation 용 json 파일을 lst 파일로 변경해주는 프로그램
+
 import os
 from pycocotools.coco import COCO
 import numpy as np
