@@ -14,11 +14,6 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 - Dataset: 일반 쓰레기, 플라스틱, 종이, 유리 등 11 종류의 쓰레기가 찍힌 사진 데이터셋 4091여장(train 2617장, valid : 665장, test : 819장)
 - 평가 metric: mean Intersection over Union(mIOU) on test dataset
 
-
-## Requirements
-
-
-
 ## contents
 ```
 |-- datasets
