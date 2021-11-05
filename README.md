@@ -61,8 +61,7 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 ```
 
 ## Project Roadmap
-![image](https://user-images.githubusercontent.com/61641072/140486861-b9258e20-edf0-4766-aa9e-8f32087598d2.png)
-
+![image](https://user-images.githubusercontent.com/61641072/140487297-9524513e-75a2-4fa0-87b1-c390845cbc92.png)
 
 ## best result
 - ./runs/Transunet_SGD_1024.pt
