@@ -9,8 +9,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import torch.optim as optim
-from cv2 import transform
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -18,8 +16,7 @@ import wandb
 from datasets.coco import CocoDetectionCP
 from datasets.dataset import (CustomDataLoader, collate_fn, cp_collate_fn,
                               train_augmix_transform,
-                              train_copypaste_transform, train_transform,
-                              val_transform)
+                              train_copypaste_transform)
 from datasets.transform_test import create_transforms
 from loss.losses import create_criterion
 from optimizer.optim_sche import get_opt_sche
