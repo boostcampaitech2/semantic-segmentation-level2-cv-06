@@ -1,15 +1,17 @@
 import argparse
 import os
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
 from importlib import import_module
 
-import torch
-from datasets.dataset import CustomDataLoader, collate_fn
-from torch.utils.data import DataLoader
 import albumentations as A
+import numpy as np
+import pandas as pd
+import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+from datasets.dataset import CustomDataLoader, collate_fn
 from datasets.transform_test import create_transforms
+
 
 @torch.no_grad()
 def inference(model_dir, args):
@@ -85,6 +87,7 @@ def inference(model_dir, args):
 
     return file_names, preds_array
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -99,12 +102,8 @@ if __name__ == '__main__':
 
     # custom args
     parser.add_argument('--custom_trs', default=False, help='option for custom transform function')
-    
-    
 
     args = parser.parse_args()
-
-
 
     model_dir = args.model_dir
     output_dir = args.output_dir

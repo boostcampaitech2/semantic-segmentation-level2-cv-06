@@ -2,26 +2,29 @@ import argparse
 import glob
 import json
 import os
-import re
 import random
-from pathlib import Path
+import re
 from importlib import import_module
-from cv2 import transform
+from pathlib import Path
 
 import numpy as np
 import torch
 import torch.optim as optim
+from cv2 import transform
 from torch.utils.data import DataLoader
+from tqdm import tqdm
+
 import wandb
-
-from datasets.dataset import CustomDataLoader, train_transform, train_augmix_transform, train_copypaste_transform, val_transform, cp_collate_fn, collate_fn
 from datasets.coco import CocoDetectionCP
-
+from datasets.dataset import (CustomDataLoader, collate_fn, cp_collate_fn,
+                              train_augmix_transform,
+                              train_copypaste_transform, train_transform,
+                              val_transform)
+from datasets.transform_test import create_transforms
 from loss.losses import create_criterion
 from optimizer.optim_sche import get_opt_sche
 from utils.utils import add_hist, grid_image, label_accuracy_score
-from datasets.transform_test import create_transforms
-from tqdm import tqdm
+
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -110,8 +113,6 @@ def train(model_dir, args):
         train_dataset = CustomDataLoader(
             data_dir=args.train_path, mode='train', transform=train_transform)
         collate_fn_func = collate_fn
-
-
 
     # data_loader
     train_loader = DataLoader(

@@ -1,11 +1,12 @@
+import segmentation_models_pytorch as smp
 import torch
 import torch.nn as nn
+from loss.losses import DiceLoss
+from torch.nn import CrossEntropyLoss
 from torchvision import models
-import segmentation_models_pytorch as smp
+
 from models.HRNET_OCR.ocrnet import HRNet, HRNet_Mscale
 from models.TransUnet.vit_seg_modeling import get_transunet
-from loss.losses import DiceLoss, LabelSmoothingLoss
-from torch.nn import CrossEntropyLoss
 
 
 class TransUnet(nn.Module):
@@ -14,7 +15,6 @@ class TransUnet(nn.Module):
         self.backbone = get_transunet(num_classes=num_classes, pretrained = pretrained)
         self.ce_loss = CrossEntropyLoss()
         self.dice_loss = DiceLoss(num_classes)
-        # self.smoothloss = LabelSmoothingLoss()
     
     def forward(self, x):
         return self.backbone(x)
@@ -182,4 +182,3 @@ class MscaleOCRNet(nn.Module):
 
     def forward(self, x):
         return self.model(x)
-

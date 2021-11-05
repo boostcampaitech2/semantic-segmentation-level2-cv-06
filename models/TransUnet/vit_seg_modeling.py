@@ -1,26 +1,19 @@
 # coding=utf-8
-# from __future__ import absolute_import
-# from __future__ import division
-# from __future__ import print_function
-
 import copy
 import logging
 import math
-
 from os.path import join as pjoin
-from matplotlib.pyplot import sca
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-
-from torch.nn import Dropout, Softmax, Linear, Conv2d, LayerNorm
-from torch.nn.modules.utils import _pair
 from scipy import ndimage
+from torch.nn import Conv2d, Dropout, LayerNorm, Linear, Softmax
+from torch.nn.modules.utils import _pair
+
 from . import vit_seg_configs as configs
 from .vit_seg_modeling_resnet_skip import ResNetV2
-
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +144,6 @@ class Embeddings(nn.Module):
         self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, config.hidden_size))
 
         self.dropout = Dropout(config.transformer["dropout_rate"])
-
 
     def forward(self, x):
         if self.hybrid:
@@ -385,7 +377,6 @@ class VisionTransformer(nn.Module):
             kernel_size=3,
         )
         self.config = config
-
         
     def forward(self, x):
         if x.size()[1] == 1:
@@ -444,6 +435,7 @@ class VisionTransformer(nn.Module):
                     for uname, unit in block.named_children():
                         unit.load_from(res_weight, n_block=bname, n_unit=uname)
 
+
 CONFIGS = {
     'ViT-B_16': configs.get_b16_config(),
     'ViT-B_32': configs.get_b32_config(),
@@ -456,6 +448,7 @@ CONFIGS = {
     'testing': configs.get_testing(),
 }
 
+
 def get_transunet(num_classes = 11, pretrained = True):
     config_vit = CONFIGS['R50-ViT-B_16']
     config_vit.n_classes = num_classes
@@ -465,8 +458,3 @@ def get_transunet(num_classes = 11, pretrained = True):
     if pretrained:
         net.load_from(weights=np.load(config_vit.pretrained_path))
     return net
-    
-
-# model = get_transunet()
-# dumm = model(torch.zeros((8, 3, 1024, 1024)))
-# print(dumm.shape)

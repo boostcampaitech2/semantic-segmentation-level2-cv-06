@@ -1,14 +1,11 @@
+import albumentations as A
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from skimage.io import imread
-import albumentations as A
-
 import pydensecrf.densecrf as dcrf
-from pydensecrf.utils import unary_from_labels
-
 import ray
-
+from pydensecrf.utils import unary_from_labels
+from skimage.io import imread
+from tqdm import tqdm
 
 OUTPUT_CSV = './output/transunet.csv'
 IMAGE_PATH = './input/data/'

@@ -1,9 +1,9 @@
 import os
-import numpy as np
 
+import numpy as np
 import torch
-import torch.nn as nn
 import torch._utils
+import torch.nn as nn
 import torch.nn.functional as F
 
 BN_MOMENTUM = 0.1

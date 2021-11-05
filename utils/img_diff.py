@@ -1,31 +1,25 @@
-import os
 import json
-import warnings 
+import os
+import warnings
+
 warnings.filterwarnings('ignore')
 
-import torch
-import torch.nn as nn
-from torch.utils.data import Dataset
-import cv2
+import sys
 
+import albumentations as A
+import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import torch
+from albumentations.pytorch import ToTensorV2
+from pycocotools.coco import COCO
+from torch.utils.data import Dataset
 from tqdm import tqdm
 
-# 전처리를 위한 라이브러리
-from pycocotools.coco import COCO
-import torch
-
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-# 시각화를 위한 라이브러리
-import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 
-import sys
 sys.path.insert(1, '/opt/ml/semantic-segmentation-level2-cv-06/')
 # from utils import label_accuracy_score, add_hist
 
@@ -180,9 +174,6 @@ train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2,
                                            num_workers=4,
                                            collate_fn=collate_fn)
 
-
-# n = 3
-# i=0
 figsize=8
 
 for idx, (imgs, masks, image_infos, masks2) in enumerate(tqdm(train_loader2)):
@@ -205,14 +196,6 @@ for idx, (imgs, masks, image_infos, masks2) in enumerate(tqdm(train_loader2)):
 
         ax[3].imshow(label_to_color_image(masks2[0].detach().cpu().numpy()))
         ax[3].grid(False)
-        # i += 1
 
-        # print(f'{image_infos[0]["file_name"][:-4]}.png')
         plt.savefig(f'{image_infos[0]["file_name"][:-4]}')
-        # break
-        # plt.savefig(f'{image_infos[0]["file_name"]}')
-    
-    # if i >= n:
-    #     break
-        
-# plt.show()
+

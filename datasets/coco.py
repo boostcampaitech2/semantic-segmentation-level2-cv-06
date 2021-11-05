@@ -1,8 +1,10 @@
 import os
+
 import cv2
-from torchvision.datasets import CocoDetection
-from datasets.copy_paste import copy_paste_class
 import numpy as np
+from torchvision.datasets import CocoDetection
+
+from datasets.copy_paste import copy_paste_class
 
 min_keypoints_per_image = 10
 

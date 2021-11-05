@@ -1,22 +1,18 @@
 import os
+import sys
+
+import albumentations as A
 import cv2
 import numpy as np
+import torch
+from albumentations.pytorch import ToTensorV2
 from pycocotools.coco import COCO
 from torch.utils.data import Dataset
 
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-
-from datasets.transform_test import RandomAugMix
-
 # copy paste 
 from datasets.copy_paste import CopyPaste
-from datasets.coco import CocoDetectionCP
-import torch
-
 from datasets.transform_test import RandomAugMix
 
-import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 dataset_path = './sample_data/'

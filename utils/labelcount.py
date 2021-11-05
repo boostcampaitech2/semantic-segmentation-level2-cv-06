@@ -1,13 +1,15 @@
+import os
+import sys
+
 import torch
 from torch.utils.data import DataLoader
-import os
 
-import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+import json
+from collections import Counter
+
 from datasets.dataset import CustomDataLoader, collate_fn, train_transform
 from tqdm import tqdm
-from collections import Counter
-import json
 
 
 def pixelcount(args):
@@ -80,8 +82,3 @@ def get_weight(mode = 'instance'):
     else: 
         counts = pixelcount(args)
     return counts.values()
-
-
-
-#testcode
-# print(get_weight())

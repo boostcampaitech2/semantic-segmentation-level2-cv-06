@@ -3,13 +3,16 @@ This code adapted from: https://github.com/LiyuanLucasLiu/RAdam
 From the paper: https://arxiv.org/abs/1908.03265
 """
 import math
+
 import torch
 # pylint: disable=no-name-in-module
 from torch.optim.optimizer import Optimizer
 
 
 class RAdam(Optimizer):
-    """RAdam optimizer"""
+    """
+    RAdam optimizer
+    """
 
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
                  weight_decay=0):

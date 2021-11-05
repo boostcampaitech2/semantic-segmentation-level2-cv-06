@@ -1,7 +1,5 @@
-import math
-
-from os.path import join as pjoin
 from collections import OrderedDict
+from os.path import join as pjoin
 
 import torch
 import torch.nn as nn
@@ -9,7 +7,9 @@ import torch.nn.functional as F
 
 
 def np2th(weights, conv=False):
-    """Possibly convert HWIO to OIHW."""
+    """
+    Possibly convert HWIO to OIHW.
+    """
     if conv:
         weights = weights.transpose([3, 2, 0, 1])
     return torch.from_numpy(weights)
@@ -36,7 +36,8 @@ def conv1x1(cin, cout, stride=1, bias=False):
 
 
 class PreActBottleneck(nn.Module):
-    """Pre-activation (v2) bottleneck block.
+    """
+    Pre-activation (v2) bottleneck block.
     """
 
     def __init__(self, cin, cout=None, cmid=None, stride=1):
@@ -58,7 +59,6 @@ class PreActBottleneck(nn.Module):
             self.gn_proj = nn.GroupNorm(cout, cout)
 
     def forward(self, x):
-
         # Residual branch
         residual = x
         if hasattr(self, 'downsample'):
@@ -109,9 +109,11 @@ class PreActBottleneck(nn.Module):
             self.gn_proj.weight.copy_(proj_gn_weight.view(-1))
             self.gn_proj.bias.copy_(proj_gn_bias.view(-1))
 
-class ResNetV2(nn.Module):
-    """Implementation of Pre-activation (v2) ResNet mode."""
 
+class ResNetV2(nn.Module):
+    """
+    Implementation of Pre-activation (v2) ResNet mode.
+    """
     def __init__(self, block_units, width_factor):
         super().__init__()
         width = int(64 * width_factor)

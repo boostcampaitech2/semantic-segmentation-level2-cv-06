@@ -1,9 +1,9 @@
 from collections import OrderedDict
+
+import models.HRNET_OCR.hrnetv2 as hrnetv2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import models.HRNET_OCR.hrnetv2 as hrnetv2
-
 
 ALIGN_CORNERS = False
 MSCALE_INNER_3x3 = True

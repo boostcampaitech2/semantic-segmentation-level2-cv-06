@@ -357,7 +357,6 @@ class OhemCrossEntropy(nn.Module):
         ])
 
 
-
 _criterion_entropoints = {
     'cross_entropy': nn.CrossEntropyLoss,
     'focal': FocalLoss,

@@ -1,13 +1,11 @@
-import numpy as np
-import cv2
-from scipy.ndimage.interpolation import map_coordinates
-from scipy.ndimage.filters import gaussian_filter
 import albumentations as A
 import albumentations.augmentations.transforms as trans
-from PIL import Image, ImageOps, ImageEnhance
+import cv2
+import numpy as np
 from albumentations.core.transforms_interface import ImageOnlyTransform
-
-from datasets.copy_paste import CopyPaste
+from PIL import Image, ImageEnhance, ImageOps
+from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.interpolation import map_coordinates
 
 # taken from: https://www.kaggle.com/bguberfain/elastic-transform-for-data-augmentation
 # Function to distort image
@@ -286,7 +284,6 @@ class RandomAugMix(ImageOnlyTransform):
         return image
 
 
-# 모든 코드는 이 줄 위에 써주세요
 _transform_entropoints = {
     'TransUnet': transform_transunet
 }
