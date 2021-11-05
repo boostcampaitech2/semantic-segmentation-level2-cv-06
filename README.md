@@ -13,6 +13,8 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 - 목적: 사진에서 쓰레기를 Segmentation 하는 모델 제작
 - Dataset: 일반 쓰레기, 플라스틱, 종이, 유리 등 11 종류의 쓰레기가 찍힌 사진 데이터셋 4091여장(train 2617장, valid : 665장, test : 819장)
 - 평가 metric: mean Intersection over Union(mIOU) on test dataset
+<img src="https://user-images.githubusercontent.com/51853700/140482768-c07af3b0-0f76-437f-8f4d-54a4bffd2b96.png"  width="400" height="400"/>
+
 
 ## contents
 ```
