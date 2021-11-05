@@ -81,10 +81,16 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 `pip install requirement.txt`
 
 ### Train
+```python
+python train.py --model MscaleOCRNet --batch_size 10 --wandb True --custom_trs True
+                --model DeepLabV3
+                --model TransUnet
+```  
 
 ### Inference
-
+`python inference.py`  
 ### ensemble
+for ensemble, please reffer to `ensemble.ipynb`
 
 
 ## reference
