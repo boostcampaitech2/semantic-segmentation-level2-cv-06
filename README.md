@@ -68,7 +68,8 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 - ./runs/DeepLabv3_efficientb7_copypaste.pt
   - Public : 0.603, private : 0.621
   - **DeepLabV3 + copypaste -** [weight download](https://drive.google.com/drive/folders/1z3ribIiZ8on-v624r2j0TN5ihx4M67ro)
-  
+- Ensemble (TransUNet+DeepLabV3)
+  - Public : 0.661, private : 0.707
 
 ## simple start
 
