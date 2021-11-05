@@ -80,10 +80,14 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 ## simple start
 
 ### environment
-`pip install requirement.txt`
+```python
+pip install requirement.txt
+```
 - [pydensecrf](https://github.com/lucasb-eyer/pydensecrf)
 
-'''pip install git+https://github.com/lucasb-eyer/pydensecrf.git'''
+```python
+pip install git+https://github.com/lucasb-eyer/pydensecrf.git
+```
 
 ### Train
 ```python
@@ -93,7 +97,9 @@ python train.py --model MscaleOCRNet --batch_size 10 --wandb True --custom_trs T
 ```  
 
 ### Inference
-`python inference.py`  
+```python
+python inference.py
+```  
 ### ensemble
 for ensemble, please reffer to `ensemble.ipynb`
 
