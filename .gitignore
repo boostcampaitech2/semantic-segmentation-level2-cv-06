@@ -36,3 +36,5 @@ nvidia/
 master_cp.ipynb
 
 *.pickle
+
+*.pt
