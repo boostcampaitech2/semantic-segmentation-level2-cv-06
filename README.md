@@ -9,11 +9,9 @@
 ## Competition Overview
 - 목적: 사진에서 쓰레기를 Segmentation 하는 모델 제작
 - Dataset: 일반 쓰레기, 플라스틱, 종이, 유리 등 11 종류의 쓰레기가 찍힌 사진 데이터셋 4091여장(train 2617장, valid : 665장, test : 819장)
-- 평가 metric: mean Intersection over Union(mIOU) on test dataset
-- Label mask 생성시 annotation 정렬 순서에 따라 마스크가 비정상 적으로 표시되는 것을 발견하고 정렬 방식 개선
-- [원본/개선전/개선후/변경부분]
-<img src="https://user-images.githubusercontent.com/51853700/140482768-c07af3b0-0f76-437f-8f4d-54a4bffd2b96.png"  width="400" height="400"/>
-<br /><br />
+- 평가 metric: mean Intersection over Union(mIOU) on test dataset <br /><br />
+![segmentation_viz](https://user-images.githubusercontent.com/51853700/140501597-8192b523-2152-4734-9a78-d474321ac6d2.png)
+
 
 ## Project Roadmap
 <!-- ![0001](https://user-images.githubusercontent.com/68782183/140489733-83112ac8-65bb-4fa7-b4d1-dbf1198583d3.jpg) -->
