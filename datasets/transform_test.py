@@ -20,8 +20,11 @@ def elastic_transform(image, mask, seed):
 
      Based on https://gist.github.com/erniejunior/601cdf56d2b424757de5
     """
-    alpha, sigma, alpha_affine = image.shape[1] * \
-        6, image.shape[1] * 0.2, image.shape[1] * 0.2
+    alpha, sigma, alpha_affine = (
+        image.shape[1] * 6,
+        image.shape[1] * 0.2,
+        image.shape[1] * 0.2,
+    )
     image = np.concatenate((image, mask[..., None]), axis=2)
     random_state = np.random.RandomState(seed)
     shape = image.shape
@@ -30,66 +33,85 @@ def elastic_transform(image, mask, seed):
     # Random affine
     center_square = np.float32(shape_size) // 2
     square_size = min(shape_size) // 3
-    pts1 = np.float32([center_square + square_size, [center_square[0]+square_size,
-                      center_square[1]-square_size], center_square - square_size])
-    pts2 = pts1 + random_state.uniform(-alpha_affine,
-                                       alpha_affine, size=pts1.shape).astype(np.float32)
+    pts1 = np.float32(
+        [
+            center_square + square_size,
+            [center_square[0] + square_size, center_square[1] - square_size],
+            center_square - square_size,
+        ]
+    )
+    pts2 = pts1 + random_state.uniform(
+        -alpha_affine, alpha_affine, size=pts1.shape
+    ).astype(np.float32)
     M = cv2.getAffineTransform(pts1, pts2)
     image = cv2.warpAffine(
-        image, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)
+        image, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101
+    )
 
     image, mask = image[..., 0:3], image[..., 3].astype(np.int8)
 
     dx = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
     dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
 
-    x, y, z = np.meshgrid(np.arange(shape[1]), np.arange(
-        shape[0]), np.arange(shape[2]))
-    indices = np.reshape(y+dy, (-1, 1)), np.reshape(x+dx,
-                                                    (-1, 1)), np.reshape(z, (-1, 1))
-    im_merge_t = map_coordinates(
-        image, indices, order=1, mode='reflect').reshape(shape)
+    x, y, z = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]), np.arange(shape[2]))
+    indices = (
+        np.reshape(y + dy, (-1, 1)),
+        np.reshape(x + dx, (-1, 1)),
+        np.reshape(z, (-1, 1)),
+    )
+    im_merge_t = map_coordinates(image, indices, order=1, mode="reflect").reshape(shape)
     # im_t = im_merge_t[...,0:3]
     # im_mask_t = im_merge_t[...,3].astype(np.int8)
     return im_merge_t, mask
 
 
-class transform_transunet():
-    def __init__(self, seed, p=0.5, scale = 2):
+class transform_transunet:
+    def __init__(self, seed, p=0.5, scale=2):
 
         assert 0 <= p <= 1
 
         self.scale = scale if scale else 1
         self.elastic = elastic_transform
-        self.transform = A.Compose([
-            trans.Blur(p=p),
-            trans.ToGray(p=p),
-            A.ShiftScaleRotate(rotate_limit=15, p=p,
-                               border_mode=cv2.BORDER_CONSTANT),
-            A.HorizontalFlip(p=p),
-            A.Normalize(),
-            A.pytorch.ToTensorV2()
-        ])
-        self.norm_totensor = A.Compose([
-            A.Normalize(),
-            A.pytorch.ToTensorV2()
-        ])
+        self.transform = A.Compose(
+            [
+                trans.Blur(p=p),
+                trans.ToGray(p=p),
+                A.ShiftScaleRotate(
+                    rotate_limit=15, p=p, border_mode=cv2.BORDER_CONSTANT
+                ),
+                A.HorizontalFlip(p=p),
+                A.Normalize(),
+                A.pytorch.ToTensorV2(),
+            ]
+        )
+        self.norm_totensor = A.Compose([A.Normalize(), A.pytorch.ToTensorV2()])
         self.p = p
         self.seed = seed
 
     def transform_img(self, image, mask):
-        image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale,
-                           interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+        image = cv2.resize(
+            image,
+            (0, 0),
+            fx=self.scale,
+            fy=self.scale,
+            interpolation=cv2.INTER_LANCZOS4,
+        ).astype(np.float32)
         return self.transform(image=image, mask=mask)
 
     def val_transform_img(self, image, mask):
-        image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale,
-                           interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+        image = cv2.resize(
+            image,
+            (0, 0),
+            fx=self.scale,
+            fy=self.scale,
+            interpolation=cv2.INTER_LANCZOS4,
+        ).astype(np.float32)
         return self.norm_totensor(image=image, mask=mask)
 
     def test_transform_img(self, image):
-        image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale,
-                           interpolation=cv2.INTER_LINEAR).astype(np.float32)
+        image = cv2.resize(
+            image, (0, 0), fx=self.scale, fy=self.scale, interpolation=cv2.INTER_LINEAR
+        ).astype(np.float32)
         return self.norm_totensor(image=image)
 
 
@@ -114,7 +136,7 @@ def float_parameter(level, maxval):
     Returns:
     A float that results from scaling `maxval` according to `level`.
     """
-    return float(level) * maxval / 10.
+    return float(level) * maxval / 10.0
 
 
 def sample_level(n):
@@ -150,36 +172,36 @@ def shear_x(pil_img, level):
     level = float_parameter(sample_level(level), 0.3)
     if np.random.uniform() > 0.5:
         level = -level
-    return pil_img.transform(pil_img.size,
-                             Image.AFFINE, (1, level, 0, 0, 1, 0),
-                             resample=Image.BILINEAR)
+    return pil_img.transform(
+        pil_img.size, Image.AFFINE, (1, level, 0, 0, 1, 0), resample=Image.BILINEAR
+    )
 
 
 def shear_y(pil_img, level):
     level = float_parameter(sample_level(level), 0.3)
     if np.random.uniform() > 0.5:
         level = -level
-    return pil_img.transform(pil_img.size,
-                             Image.AFFINE, (1, 0, 0, level, 1, 0),
-                             resample=Image.BILINEAR)
+    return pil_img.transform(
+        pil_img.size, Image.AFFINE, (1, 0, 0, level, 1, 0), resample=Image.BILINEAR
+    )
 
 
 def translate_x(pil_img, level):
     level = int_parameter(sample_level(level), pil_img.size[0] / 3)
     if np.random.random() > 0.5:
         level = -level
-    return pil_img.transform(pil_img.size,
-                             Image.AFFINE, (1, 0, level, 0, 1, 0),
-                             resample=Image.BILINEAR)
+    return pil_img.transform(
+        pil_img.size, Image.AFFINE, (1, 0, level, 0, 1, 0), resample=Image.BILINEAR
+    )
 
 
 def translate_y(pil_img, level):
     level = int_parameter(sample_level(level), pil_img.size[0] / 3)
     if np.random.random() > 0.5:
         level = -level
-    return pil_img.transform(pil_img.size,
-                             Image.AFFINE, (1, 0, 0, 0, 1, level),
-                             resample=Image.BILINEAR)
+    return pil_img.transform(
+        pil_img.size, Image.AFFINE, (1, 0, 0, 0, 1, level), resample=Image.BILINEAR
+    )
 
 
 # operation that overlaps with ImageNet-C's test set
@@ -207,16 +229,31 @@ def sharpness(pil_img, level):
 
 
 augmentations = [
-    autocontrast, equalize, posterize, solarize,
-    rotate, shear_x, shear_y,
-    translate_x, translate_y
+    autocontrast,
+    equalize,
+    posterize,
+    solarize,
+    rotate,
+    shear_x,
+    shear_y,
+    translate_x,
+    translate_y,
 ]
 
 augmentations_all = [
-    autocontrast, equalize, posterize, solarize,
-    rotate, shear_x, shear_y,
-    translate_x, translate_y,
-    color, contrast, brightness, sharpness
+    autocontrast,
+    equalize,
+    posterize,
+    solarize,
+    rotate,
+    shear_x,
+    shear_y,
+    translate_x,
+    translate_y,
+    color,
+    contrast,
+    brightness,
+    sharpness,
 ]
 
 
@@ -235,7 +272,7 @@ def apply_op(image, op, severity):
     return np.asarray(pil_img)
 
 
-def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
+def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.0):
     """Perform AugMix augmentations and compute mixture.
     Args:
     image: Raw input image as float32 np.ndarray of shape (h, w, c)
@@ -247,8 +284,7 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
     Returns:
     mixed: Augmented and mixed image.
     """
-    ws = np.float32(
-        np.random.dirichlet([alpha] * width))
+    ws = np.float32(np.random.dirichlet([alpha] * width))
     m = np.float32(np.random.beta(alpha, alpha))
 
     mix = np.zeros_like(image).astype(np.float32)
@@ -266,7 +302,9 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
 
 
 class RandomAugMix(ImageOnlyTransform):
-    def __init__(self, severity=3, width=3, depth=-1, alpha=1., always_apply=False, p=0.5):
+    def __init__(
+        self, severity=3, width=3, depth=-1, alpha=1.0, always_apply=False, p=0.5
+    ):
         super().__init__(always_apply, p)
         self.severity = severity
         self.width = width
@@ -275,18 +313,12 @@ class RandomAugMix(ImageOnlyTransform):
 
     def apply(self, image, **params):
         image = augment_and_mix(
-            image,
-            self.severity,
-            self.width,
-            self.depth,
-            self.alpha
+            image, self.severity, self.width, self.depth, self.alpha
         )
         return image
 
 
-_transform_entropoints = {
-    'TransUnet': transform_transunet
-}
+_transform_entropoints = {"TransUnet": transform_transunet}
 
 
 def transform_entrypoint(criterion_name):
@@ -303,8 +335,8 @@ def create_transforms(criterion_name, seed, **kwargs):
         create_fn = transform_entrypoint(criterion_name)
         print(create_fn)
         criterion = create_fn(seed, **kwargs)
-        print('here1')
+        print("here1")
         print(criterion.transform_img())
     else:
-        raise RuntimeError('Unknown transform (%s)' % criterion_name)
+        raise RuntimeError("Unknown transform (%s)" % criterion_name)
     return criterion

@@ -1,11 +1,17 @@
 import torch
 import torch.nn as nn
-from models.HRNET_OCR.ocrnet_utils import (BNReLU, ResizeX,
-                                           SpatialGather_Module,
-                                           SpatialOCR_Module, Upsample,
-                                           fmt_scale, get_trunk,
-                                           initialize_weights, make_attn_head,
-                                           scale_as)
+from models.HRNET_OCR.ocrnet_utils import (
+    BNReLU,
+    ResizeX,
+    SpatialGather_Module,
+    SpatialOCR_Module,
+    Upsample,
+    fmt_scale,
+    get_trunk,
+    initialize_weights,
+    make_attn_head,
+    scale_as,
+)
 
 INIT_DECODER = False
 MID_CHANNELS = 512
@@ -20,6 +26,7 @@ class OCR_block(nn.Module):
     Some of the code in this class is borrowed from:
     https://github.com/HRNet/HRNet-Semantic-Segmentation/tree/HRNet-OCR
     """
+
     def __init__(self, high_level_ch, num_classes):
         super(OCR_block, self).__init__()
 
@@ -28,35 +35,44 @@ class OCR_block(nn.Module):
         num_classes = num_classes
 
         self.conv3x3_ocr = nn.Sequential(
-            nn.Conv2d(high_level_ch, ocr_mid_channels,
-                      kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(
+                high_level_ch, ocr_mid_channels, kernel_size=3, stride=1, padding=1
+            ),
             BNReLU(ocr_mid_channels),
         )
         self.ocr_gather_head = SpatialGather_Module(num_classes)
-        self.ocr_distri_head = SpatialOCR_Module(in_channels=ocr_mid_channels,
-                                                 key_channels=ocr_key_channels,
-                                                 out_channels=ocr_mid_channels,
-                                                 scale=1,
-                                                 dropout=0.05,
-                                                 )
+        self.ocr_distri_head = SpatialOCR_Module(
+            in_channels=ocr_mid_channels,
+            key_channels=ocr_key_channels,
+            out_channels=ocr_mid_channels,
+            scale=1,
+            dropout=0.05,
+        )
         self.cls_head = nn.Conv2d(
-            ocr_mid_channels, num_classes, kernel_size=1, stride=1, padding=0,
-            bias=True)
+            ocr_mid_channels, num_classes, kernel_size=1, stride=1, padding=0, bias=True
+        )
 
         self.aux_head = nn.Sequential(
-            nn.Conv2d(high_level_ch, high_level_ch,
-                      kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(high_level_ch, high_level_ch, kernel_size=1, stride=1, padding=0),
             BNReLU(high_level_ch),
-            nn.Conv2d(high_level_ch, num_classes,
-                      kernel_size=1, stride=1, padding=0, bias=True)
+            nn.Conv2d(
+                high_level_ch,
+                num_classes,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=True,
+            ),
         )
 
         if INIT_DECODER:
-            initialize_weights(self.conv3x3_ocr,
-                               self.ocr_gather_head,
-                               self.ocr_distri_head,
-                               self.cls_head,
-                               self.aux_head)
+            initialize_weights(
+                self.conv3x3_ocr,
+                self.ocr_gather_head,
+                self.ocr_distri_head,
+                self.cls_head,
+                self.aux_head,
+            )
 
     def forward(self, high_level_features):
         feats = self.conv3x3_ocr(high_level_features)
@@ -71,7 +87,8 @@ class OCRNet(nn.Module):
     """
     OCR net
     """
-    def __init__(self, num_classes, trunk='hrnetv2'):
+
+    def __init__(self, num_classes, trunk="hrnetv2"):
         super(OCRNet, self).__init__()
         self.backbone, _, _, high_level_ch = get_trunk(trunk)
         self.ocr = OCR_block(high_level_ch, num_classes)
@@ -84,8 +101,7 @@ class OCRNet(nn.Module):
         aux_out = scale_as(aux_out, x)
         cls_out = scale_as(cls_out, x)
 
-        output_dict = {'pred': cls_out,
-                       'aux': aux_out}
+        output_dict = {"pred": cls_out, "aux": aux_out}
         return output_dict
 
 
@@ -93,12 +109,12 @@ class MscaleOCR(nn.Module):
     """
     Mscale OCR net
     """
-    def __init__(self, num_classes, trunk='hrnetv2'):
+
+    def __init__(self, num_classes, trunk="hrnetv2"):
         super(MscaleOCR, self).__init__()
         self.backbone, _, _, high_level_ch = get_trunk(trunk)
         self.ocr = OCR_block(high_level_ch, num_classes)
-        self.scale_attn = make_attn_head(
-            in_ch=MID_CHANNELS, out_ch=1)
+        self.scale_attn = make_attn_head(in_ch=MID_CHANNELS, out_ch=1)
 
     def _fwd(self, x):
         x_size = x.size()[2:]
@@ -111,9 +127,7 @@ class MscaleOCR(nn.Module):
         cls_out = Upsample(cls_out, x_size)
         attn = Upsample(attn, x_size)
 
-        return {'cls_out': cls_out,
-                'aux_out': aux_out,
-                'logit_attn': attn}
+        return {"cls_out": cls_out, "aux_out": aux_out, "logit_attn": attn}
 
     def nscale_forward(self, inputs, scales):
         """
@@ -143,7 +157,7 @@ class MscaleOCR(nn.Module):
         """
         x_1x = inputs
 
-        assert 1.0 in scales, 'expected 1.0 to be the target scale'
+        assert 1.0 in scales, "expected 1.0 to be the target scale"
         # Lower resolution provides attention for higher rez predictions,
         # so we evaluate in order: high to low
         scales = sorted(scales, reverse=True)
@@ -155,13 +169,13 @@ class MscaleOCR(nn.Module):
         for s in scales:
             x = ResizeX(x_1x, s)
             outs = self._fwd(x)
-            cls_out = outs['cls_out']
-            attn_out = outs['logit_attn']
-            aux_out = outs['aux_out']
+            cls_out = outs["cls_out"]
+            attn_out = outs["logit_attn"]
+            aux_out = outs["aux_out"]
 
-            output_dict[fmt_scale('pred', s)] = cls_out
+            output_dict[fmt_scale("pred", s)] = cls_out
             if s != 2.0:
-                output_dict[fmt_scale('attn', s)] = attn_out
+                output_dict[fmt_scale("attn", s)] = attn_out
 
             if pred is None:
                 pred = cls_out
@@ -184,8 +198,8 @@ class MscaleOCR(nn.Module):
                 pred = cls_out + (1 - attn_out) * pred
                 aux = aux_out + (1 - attn_out) * aux
 
-        output_dict['pred'] = pred
-        output_dict['aux'] = aux
+        output_dict["pred"] = pred
+        output_dict["aux"] = aux
         return output_dict
 
     def two_scale_forward(self, inputs):
@@ -201,16 +215,16 @@ class MscaleOCR(nn.Module):
 
         x_lo = ResizeX(x_1x, MSCALE_LO_SCALE)
         lo_outs = self._fwd(x_lo)
-        pred_05x = lo_outs['cls_out']
+        pred_05x = lo_outs["cls_out"]
         p_lo = pred_05x
-        aux_lo = lo_outs['aux_out']
-        logit_attn = lo_outs['logit_attn']
+        aux_lo = lo_outs["aux_out"]
+        logit_attn = lo_outs["logit_attn"]
         attn_05x = logit_attn
 
         hi_outs = self._fwd(x_1x)
-        pred_10x = hi_outs['cls_out']
+        pred_10x = hi_outs["cls_out"]
         p_1x = pred_10x
-        aux_1x = hi_outs['aux_out']
+        aux_1x = hi_outs["aux_out"]
 
         p_lo = logit_attn * p_lo
         aux_lo = logit_attn * aux_lo
@@ -222,18 +236,18 @@ class MscaleOCR(nn.Module):
         # combine lo and hi predictions with attention
         joint_pred = p_lo + (1 - logit_attn) * p_1x
         joint_aux = aux_lo + (1 - logit_attn) * aux_1x
-        
+
         output_dict = {
-            'pred': joint_pred,
-            'pred_05x': pred_05x,
-            'pred_10x': pred_10x,
-            'attn_05x': attn_05x,
-            'aux': joint_aux,
+            "pred": joint_pred,
+            "pred_05x": pred_05x,
+            "pred_10x": pred_10x,
+            "attn_05x": attn_05x,
+            "aux": joint_aux,
         }
         return output_dict
 
     def forward(self, inputs):
-        
+
         if N_SCALES and not self.training:
             return self.nscale_forward(inputs, N_SCALES)
 
@@ -241,9 +255,8 @@ class MscaleOCR(nn.Module):
 
 
 def HRNet(num_classes):
-    return OCRNet(num_classes, trunk='hrnetv2')
+    return OCRNet(num_classes, trunk="hrnetv2")
 
 
 def HRNet_Mscale(num_classes):
-    return MscaleOCR(num_classes, trunk='hrnetv2')
-
+    return MscaleOCR(num_classes, trunk="hrnetv2")
