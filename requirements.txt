@@ -1,0 +1,23 @@
+aiohttp==3.7.4.post0
+albumentations==1.0.3
+blinker==1.4
+brotlipy==0.7.0
+Cython==0.29.24
+ipywidgets==7.6.5
+ml-collections==0.1.0
+opencv-python==4.2.0.34
+pycocotools==2.0.2
+PyJWT==2.3.0
+pyOpenSSL==21.0.0
+PySocks==1.7.1
+pyu2f==0.1.5
+ray==1.7.0
+seaborn==0.11.2
+segmentation-models-pytorch==0.2.0
+torch==1.8.0 
+torchvision==0.9.0 
+torchaudio==0.8.0 
+wandb==0.12.4
+webcolors==1.11.1
+pydensecrf @git+https://github.com/lucasb-eyer/pydensecrf.git
+tqdm==4.28.1

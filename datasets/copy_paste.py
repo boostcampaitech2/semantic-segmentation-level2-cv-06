@@ -1,10 +1,9 @@
-import os
-import cv2
 import random
-import numpy as np
+
 import albumentations as A
-from copy import deepcopy
+import numpy as np
 from skimage.filters import gaussian
+
 
 def image_copy_paste(img, paste_img, alpha, blend=True, sigma=1):
     if alpha is not None:
@@ -18,18 +17,22 @@ def image_copy_paste(img, paste_img, alpha, blend=True, sigma=1):
 
     return img
 
+
 def mask_copy_paste(mask, paste_mask, alpha):
     raise NotImplementedError
 
+
 def masks_copy_paste(masks, paste_masks, alpha):
     if alpha is not None:
-        #eliminate pixels that will be pasted over
+        # eliminate pixels that will be pasted over
         masks = [
-            np.logical_and(mask, np.logical_xor(mask, alpha)).astype(np.uint8) for mask in masks
+            np.logical_and(mask, np.logical_xor(mask, alpha)).astype(np.uint8)
+            for mask in masks
         ]
         masks.extend(paste_masks)
 
     return masks
+
 
 def extract_bboxes(masks):
     bboxes = []
@@ -53,36 +56,44 @@ def extract_bboxes(masks):
 
     return bboxes
 
+
 def bboxes_copy_paste(bboxes, paste_bboxes, masks, paste_masks, alpha, key):
-    if key == 'paste_bboxes':
+    if key == "paste_bboxes":
         return bboxes
     elif paste_bboxes is not None:
         masks = masks_copy_paste(masks, paste_masks=[], alpha=alpha)
         adjusted_bboxes = extract_bboxes(masks)
 
-        #only keep the bounding boxes for objects listed in bboxes
+        # only keep the bounding boxes for objects listed in bboxes
         mask_indices = [box[-1] for box in bboxes]
         adjusted_bboxes = [adjusted_bboxes[idx] for idx in mask_indices]
-        #append bbox tails (classes, etc.)
-        adjusted_bboxes = [bbox + tail[4:] for bbox, tail in zip(adjusted_bboxes, bboxes)]
+        # append bbox tails (classes, etc.)
+        adjusted_bboxes = [
+            bbox + tail[4:] for bbox, tail in zip(adjusted_bboxes, bboxes)
+        ]
 
-        #adjust paste_bboxes mask indices to avoid overlap
+        # adjust paste_bboxes mask indices to avoid overlap
         if len(masks) > 0:
             max_mask_index = len(masks)
         else:
             max_mask_index = 0
 
         paste_mask_indices = [max_mask_index + ix for ix in range(len(paste_bboxes))]
-        paste_bboxes = [pbox[:-1] + (pmi,) for pbox, pmi in zip(paste_bboxes, paste_mask_indices)]
+        paste_bboxes = [
+            pbox[:-1] + (pmi,) for pbox, pmi in zip(paste_bboxes, paste_mask_indices)
+        ]
         adjusted_paste_bboxes = extract_bboxes(paste_masks)
-        adjusted_paste_bboxes = [apbox + tail[4:] for apbox, tail in zip(adjusted_paste_bboxes, paste_bboxes)]
+        adjusted_paste_bboxes = [
+            apbox + tail[4:] for apbox, tail in zip(adjusted_paste_bboxes, paste_bboxes)
+        ]
 
         bboxes = adjusted_bboxes + adjusted_paste_bboxes
 
     return bboxes
 
+
 def keypoints_copy_paste(keypoints, paste_keypoints, alpha):
-    #remove occluded keypoints
+    # remove occluded keypoints
     if alpha is not None:
         visible_keypoints = []
         for kp in keypoints:
@@ -95,6 +106,7 @@ def keypoints_copy_paste(keypoints, paste_keypoints, alpha):
 
     return keypoints
 
+
 class CopyPaste(A.DualTransform):
     def __init__(
         self,
@@ -103,7 +115,7 @@ class CopyPaste(A.DualTransform):
         pct_objects_paste=0.1,
         max_paste_objects=None,
         p=0.5,
-        always_apply=False
+        always_apply=False,
     ):
         super(CopyPaste, self).__init__(always_apply, p)
         self.blend = blend
@@ -115,46 +127,46 @@ class CopyPaste(A.DualTransform):
 
     @staticmethod
     def get_class_fullname():
-        return 'copypaste.CopyPaste'
+        return "copypaste.CopyPaste"
 
     @property
     def targets_as_params(self):
         return [
             "masks",
             "paste_image",
-            #"paste_mask",
+            # "paste_mask",
             "paste_masks",
             "paste_bboxes",
-            #"paste_keypoints"
+            # "paste_keypoints"
         ]
 
     def get_params_dependent_on_targets(self, params):
         image = params["paste_image"]
         masks = None
         if "paste_mask" in params:
-            #handle a single segmentation mask with
-            #multiple targets
-            #nothing for now.
+            # handle a single segmentation mask with
+            # multiple targets
+            # nothing for now.
             raise NotImplementedError
         elif "paste_masks" in params:
             masks = params["paste_masks"]
 
-        assert(masks is not None), "Masks cannot be None!"
+        assert masks is not None, "Masks cannot be None!"
 
         bboxes = params.get("paste_bboxes", None)
         keypoints = params.get("paste_keypoints", None)
 
-        #number of objects: n_bboxes <= n_masks because of automatic removal
+        # number of objects: n_bboxes <= n_masks because of automatic removal
         n_objects = len(bboxes) if bboxes is not None else len(masks)
 
-        #paste all objects if no restrictions
+        # paste all objects if no restrictions
         n_select = n_objects
         if self.pct_objects_paste:
             n_select = int(n_select * self.pct_objects_paste)
         if self.max_paste_objects:
             n_select = min(n_select, self.max_paste_objects)
 
-        #no objects condition
+        # no objects condition
         if n_select == 0:
             return {
                 "param_masks": params["masks"],
@@ -164,22 +176,22 @@ class CopyPaste(A.DualTransform):
                 "paste_masks": None,
                 "paste_bboxes": None,
                 "paste_keypoints": None,
-                "objs_to_paste": []
+                "objs_to_paste": [],
             }
 
-        #select objects
+        # select objects
         objs_to_paste = np.random.choice(
             range(0, n_objects), size=n_select, replace=False
         )
 
-        #take the bboxes
+        # take the bboxes
         if bboxes:
             bboxes = [bboxes[idx] for idx in objs_to_paste]
-            #the last label in bboxes is the index of corresponding mask
+            # the last label in bboxes is the index of corresponding mask
             mask_indices = [bbox[-1] for bbox in bboxes]
 
-        #create alpha by combining all the objects into
-        #a single binary mask
+        # create alpha by combining all the objects into
+        # a single binary mask
         masks = [masks[idx] for idx in mask_indices]
 
         alpha = masks[0] > 0
@@ -193,18 +205,16 @@ class CopyPaste(A.DualTransform):
             "paste_mask": None,
             "paste_masks": masks,
             "paste_bboxes": bboxes,
-            "paste_keypoints": keypoints
+            "paste_keypoints": keypoints,
         }
 
     @property
     def ignore_kwargs(self):
-        return [
-            "paste_image",
-            "paste_mask",
-            "paste_masks"
-        ]
+        return ["paste_image", "paste_mask", "paste_masks"]
 
-    def apply_with_params(self, params, force_apply=False, **kwargs):  # skipcq: PYL-W0613
+    def apply_with_params(
+        self, params, force_apply=False, **kwargs
+    ):  # skipcq: PYL-W0613
         if params is None:
             return kwargs
         params = self.update_params(params, **kwargs)
@@ -212,8 +222,10 @@ class CopyPaste(A.DualTransform):
         for key, arg in kwargs.items():
             if arg is not None and key not in self.ignore_kwargs:
                 target_function = self._get_target_function(key)
-                target_dependencies = {k: kwargs[k] for k in self.target_dependence.get(key, [])}
-                target_dependencies['key'] = key
+                target_dependencies = {
+                    k: kwargs[k] for k in self.target_dependence.get(key, [])
+                }
+                target_dependencies["key"] = key
                 res[key] = target_function(arg, **dict(params, **target_dependencies))
             else:
                 res[key] = None
@@ -230,67 +242,76 @@ class CopyPaste(A.DualTransform):
     def apply_to_masks(self, masks, paste_masks, alpha, **params):
         return masks_copy_paste(masks, paste_masks, alpha)
 
-    def apply_to_bboxes(self, bboxes, paste_bboxes, param_masks, paste_masks, alpha, key, **params):
-        return bboxes_copy_paste(bboxes, paste_bboxes, param_masks, paste_masks, alpha, key)
+    def apply_to_bboxes(
+        self, bboxes, paste_bboxes, param_masks, paste_masks, alpha, key, **params
+    ):
+        return bboxes_copy_paste(
+            bboxes, paste_bboxes, param_masks, paste_masks, alpha, key
+        )
 
     def apply_to_keypoints(self, keypoints, paste_keypoints, alpha, **params):
         raise NotImplementedError
-        #return keypoints_copy_paste(keypoints, paste_keypoints, alpha)
+        # return keypoints_copy_paste(keypoints, paste_keypoints, alpha)
 
     def get_transform_init_args_names(self):
-        return (
-            "blend",
-            "sigma",
-            "pct_objects_paste",
-            "max_paste_objects"
-        )
+        return ("blend", "sigma", "pct_objects_paste", "max_paste_objects")
+
 
 def copy_paste_class(dataset_class):
     def _split_transforms(self):
         split_index = None
         for ix, tf in enumerate(list(self.transforms.transforms)):
-            if tf.get_class_fullname() == 'copypaste.CopyPaste':
+            if tf.get_class_fullname() == "copypaste.CopyPaste":
                 split_index = ix
 
         if split_index is not None:
             tfs = list(self.transforms.transforms)
             pre_copy = tfs[:split_index]
-            copy_paste = tfs[split_index] # transform 중 copy paste의 index
-            post_copy = tfs[split_index+1:]
+            copy_paste = tfs[split_index]  # transform 중 copy paste의 index
+            post_copy = tfs[split_index + 1 :]
 
-            #replicate the other augmentation parameters
+            # replicate the other augmentation parameters
             bbox_params = None
             keypoint_params = None
             paste_additional_targets = {}
-            if 'bboxes' in self.transforms.processors:
-                bbox_params = self.transforms.processors['bboxes'].params
-                paste_additional_targets['paste_bboxes'] = 'bboxes'
-                if self.transforms.processors['bboxes'].params.label_fields:
+            if "bboxes" in self.transforms.processors:
+                bbox_params = self.transforms.processors["bboxes"].params
+                paste_additional_targets["paste_bboxes"] = "bboxes"
+                if self.transforms.processors["bboxes"].params.label_fields:
                     msg = "Copy-paste does not support bbox label_fields! "
                     msg += "Expected bbox format is (a, b, c, d, label_field)"
                     raise Exception(msg)
-            if 'keypoints' in self.transforms.processors:
-                keypoint_params = self.transforms.processors['keypoints'].params
-                paste_additional_targets['paste_keypoints'] = 'keypoints'
+            if "keypoints" in self.transforms.processors:
+                keypoint_params = self.transforms.processors["keypoints"].params
+                paste_additional_targets["paste_keypoints"] = "keypoints"
                 if keypoint_params.label_fields:
-                    raise Exception('Copy-paste does not support keypoint label fields!')
+                    raise Exception(
+                        "Copy-paste does not support keypoint label fields!"
+                    )
 
             if self.transforms.additional_targets:
-                raise Exception('Copy-paste does not support additional_targets!')
+                raise Exception("Copy-paste does not support additional_targets!")
 
-            #recreate transforms
-            self.transforms = A.Compose(pre_copy, bbox_params, keypoint_params, additional_targets=None)
-            self.post_transforms = A.Compose(post_copy, bbox_params, keypoint_params, additional_targets=None)
+            # recreate transforms
+            self.transforms = A.Compose(
+                pre_copy, bbox_params, keypoint_params, additional_targets=None
+            )
+            self.post_transforms = A.Compose(
+                post_copy, bbox_params, keypoint_params, additional_targets=None
+            )
             self.copy_paste = A.Compose(
-                [copy_paste], bbox_params, keypoint_params, additional_targets=paste_additional_targets
+                [copy_paste],
+                bbox_params,
+                keypoint_params,
+                additional_targets=paste_additional_targets,
             )
         else:
             self.copy_paste = None
             self.post_transforms = None
 
     def __getitem__(self, idx):
-        #split transforms if it hasn't been done already
-        if not hasattr(self, 'post_transforms'):
+        # split transforms if it hasn't been done already
+        if not hasattr(self, "post_transforms"):
             self._split_transforms()
 
         img_data = self.load_example(idx)
@@ -298,16 +319,18 @@ def copy_paste_class(dataset_class):
             paste_idx = random.randint(0, self.__len__() - 1)
             paste_img_data = self.load_example(paste_idx)
             for k in list(paste_img_data.keys()):
-                paste_img_data['paste_' + k] = paste_img_data[k]
+                paste_img_data["paste_" + k] = paste_img_data[k]
                 del paste_img_data[k]
 
             # image:, masks:, bboxes: transform된 결과물이 원래 이미지, 붙여진 이미지 두가지 버전으로 들어가면 이를 합쳐준다
-            img_data = self.copy_paste(**img_data, **paste_img_data) 
-            img_data = self.post_transforms(**img_data) # totensor같은 copypaste 다음에 넣은 transform
-            img_data['paste_index'] = paste_idx # 붙여넣은 이미지가 어디서 온건지
+            img_data = self.copy_paste(**img_data, **paste_img_data)
+            img_data = self.post_transforms(
+                **img_data
+            )  # totensor같은 copypaste 다음에 넣은 transform
+            img_data["paste_index"] = paste_idx  # 붙여넣은 이미지가 어디서 온건지
         return img_data
 
-    setattr(dataset_class, '_split_transforms', _split_transforms)
-    setattr(dataset_class, '__getitem__', __getitem__)
+    setattr(dataset_class, "_split_transforms", _split_transforms)
+    setattr(dataset_class, "__getitem__", __getitem__)
 
     return dataset_class

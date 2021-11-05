@@ -14,11 +14,6 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 - Dataset: 일반 쓰레기, 플라스틱, 종이, 유리 등 11 종류의 쓰레기가 찍힌 사진 데이터셋 4091여장(train 2617장, valid : 665장, test : 819장)
 - 평가 metric: mean Intersection over Union(mIOU) on test dataset
 
-
-## Requirements
-
-
-
 ## contents
 ```
 |-- datasets
@@ -50,7 +45,9 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 |    |-- ensemble.ipynb
 |    |-- img_diff.py
 |    |-- labelcount.py
-|    |-- sample_submission.csv
+|    |-- new_copy_paste
+|        |-- new_copy_paste.py
+|        `-- new_copy_paste_dataset.py
 |    `-- utils.py
 |-- train.py
 |-- inference.py
@@ -62,7 +59,16 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 
 
 ## best result
-
+- ./runs/Transunet_SGD_1024.pt
+  - Public : 0.620, private : 0.595
+  - **TransUNet -** [weight download](https://drive.google.com/drive/folders/1TlLYkIUscPMfkEd6Oy4zgef71-WbeSx6)
+- ./runs/OCRNet_augmix.pt
+  - Public : 0.650, private : 0.633
+  - **OCRNet + Augmix -** [weight download](https://drive.google.com/drive/folders/1Ouy1AaO4ZVQ1IvMJJwhJP7XM_aVq_w5-)
+- ./runs/DeepLabv3_efficientb7_copypaste.pt
+  - Public : 0.650, private : 0.633
+  - **DeepLabV3 + copypaste -** [weight download](https://drive.google.com/drive/folders/1z3ribIiZ8on-v624r2j0TN5ihx4M67ro)
+  
 
 ## simple start
 
@@ -78,4 +84,8 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 
 ## reference
 https://github.com/NVIDIA/semantic-segmentation
+
+https://github.com/conradry/copy-paste-aug
+
+https://github.com/Beckschen/TransUNet
 
