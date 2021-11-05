@@ -60,13 +60,13 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 
 ## best result
 - ./runs/Transunet_SGD_1024.pt
-  - Public : 0.620, private : 0.595
+  - Public : 0.642, private : 0.672
   - **TransUNet -** [weight download](https://drive.google.com/drive/folders/1TlLYkIUscPMfkEd6Oy4zgef71-WbeSx6)
 - ./runs/OCRNet_augmix.pt
-  - Public : 0.650, private : 0.633
+  - Public : 0.52, private : 0.579
   - **OCRNet + Augmix -** [weight download](https://drive.google.com/drive/folders/1Ouy1AaO4ZVQ1IvMJJwhJP7XM_aVq_w5-)
 - ./runs/DeepLabv3_efficientb7_copypaste.pt
-  - Public : 0.650, private : 0.633
+  - Public : 0.603, private : 0.621
   - **DeepLabV3 + copypaste -** [weight download](https://drive.google.com/drive/folders/1z3ribIiZ8on-v624r2j0TN5ihx4M67ro)
   
 
