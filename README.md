@@ -19,6 +19,8 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 <img src="https://user-images.githubusercontent.com/51853700/140482768-c07af3b0-0f76-437f-8f4d-54a4bffd2b96.png"  width="400" height="400"/>
 <br /><br />
 
+## Project Roadmap
+![image](https://user-images.githubusercontent.com/68782183/140488837-d502e81b-b64d-4829-ae40-bd77ea45c956.png)
 
 ## contents
 ```
@@ -60,8 +62,6 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 |-- class_dict.csv
 |-- README.md
 ```
-
-## Project Roadmap
 
 
 ## best result
