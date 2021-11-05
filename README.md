@@ -51,8 +51,8 @@ semantic-segmentation-level2-cv-06 created by GitHub Classroom
 |    |-- img_diff.py
 |    |-- labelcount.py
 |    |-- new_copy_paste
-|        |-- new_copy_paste.py
-|        `-- new_copy_paste_dataset.py
+|    |   |-- new_copy_paste.py
+|    |   `-- new_copy_paste_dataset.py
 |    `-- utils.py
 |-- train.py
 |-- inference.py
